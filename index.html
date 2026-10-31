@@ -130,7 +130,7 @@
       </div>
       <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-xs text-emerald-200/90 space-y-1">
         <div class="flex items-center gap-2 font-semibold text-emerald-300"><i data-lucide="check-check" class="w-4 h-4"></i> The "Sets" tab drives the library</div>
-        <p class="text-[10px] text-slate-400">A Code (= card tab name) • B Name • C Release date (YYYY-MM-DD) • D Cover card # • E Language (EN/JP) • F Owned • G Total • H % • I Art code (optional) • J Image base (optional, e.g. <span class="font-mono">https://you.github.io/tcg/neo1/{nnn}.jpg</span>)</p>
+        <p class="text-[10px] text-slate-400">A Code (= card tab name) • B Name • C Release date (YYYY-MM-DD) • D Cover card # • E Language (EN/JP) • F Owned • G Total • H % • I Art code (optional) • J Image base (optional, e.g. <span class="font-mono">https://you.github.io/tcg/neo1/{nnn}.jpg</span>) • K Scrydex id (optional override)</p>
         <p class="text-[10px] text-slate-400">Card tabs: Col A (#) • B (Name) • C (Type) • E (Rarity) • F (Owned/Need) • G (Duplicates) • I (Notes) • J (Image URL, plain text).</p>
       </div>
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
@@ -246,17 +246,37 @@ async function dexDetail(lang, id) {
   } catch (e) { return c[k] ? c[k].v : null; }
 }
 
+// Name key that keeps non-Latin letters (cleanKey would turn a Japanese title into an empty string).
+const nameKey = s => String(s || '').toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+
+// me5 / sv3pt5 / base1 -> every spelling TCGdex might use as an id (me05, sv03.5 ...).
+function idVariants(text) {
+  const t = String(text).trim().toLowerCase().replace(/\s+/g, '');
+  const m = t.match(/^([a-z]+)(\d+)(?:pt|\.)?(5)?$/);
+  if (!m) return [t];
+  const [, p, n, half] = m, forms = [t];
+  [n, String(parseInt(n, 10)), n.padStart(2, '0')].forEach(d => forms.push(p + d + (half ? '.5' : ''), p + d + (half ? 'pt5' : '')));
+  return [...new Set(forms)];
+}
+
 function findDexEntry(index, text) {
   const raw = String(text).replace(/\[jp\]|^jp[\s\-_]*/ig, '').trim();
   const paren = raw.match(/\(([a-z0-9.]+)\)\s*$/i);
   if (paren) { const hit = index.find(s => cleanKey(s.id) === cleanKey(paren[1])); if (hit) return hit; }
   const name = raw.replace(/\([^)]*\)/g, '').trim();
+  for (const v of idVariants(name)) { const k = cleanKey(v); const hit = index.find(s => cleanKey(s.id) === k); if (hit) return hit; }
   const candidates = [name];
   const dm = name.match(/[:\u2014\u2013]|\s+-\s+/);
-  if (dm) candidates.push(name.slice(0, dm.index).trim(), name.slice(dm.index + dm[0].length).trim());
-  candidates.push(name.split(/[:\u2013-]/).pop(), name.replace(/\bbase$/i, ''));
-  for (const c of candidates.map(cleanKey).filter(Boolean)) {
-    const hit = index.find(s => cleanKey(s.name) === c || cleanKey(s.id) === c);
+  if (dm) {
+    // "Series: Set" matches on the set part only (matching the series first made Pitch Black resolve to Mega Evolution).
+    // A Japanese half of a bilingual title is kept, since TCGdex's Japanese names are in Japanese.
+    const a = name.slice(0, dm.index).trim(), b = name.slice(dm.index + dm[0].length).trim();
+    candidates.push(b);
+    if (/[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/.test(a)) candidates.push(a);
+  }
+  candidates.push(name.replace(/\bbase$/i, ''));
+  for (const c of candidates.map(nameKey).filter(Boolean)) {
+    const hit = index.find(s => nameKey(s.name) === c || cleanKey(s.id) === c);
     if (hit) return hit;
   }
   return null;
@@ -331,12 +351,26 @@ function imageBaseUrls(base, num, pad3) {
   return ['jpg', 'png', 'webp'].map(ext => `${folder}/${pad3}.${ext}`);
 }
 
+// Scrydex image ids are "<expansion id>-<number>": base1-4, me5-48, and m5_ja-12 for Japanese sets.
+// The expansion id comes from the set code; Sets column K overrides it. Their docs say the URL pattern is "generally"
+// stable but not guaranteed, so it is one source in the fallback list, never the only one.
+const SCRYDEX = 'https://images.scrydex.com/pokemon';
+const scrydexId = set => {
+  const o = String(set.scrydexId || '').trim().toLowerCase();
+  if (o) return o;
+  const base = String(set.code || set.tab || '').trim().replace(/^jp[-_\s]*/i, '').toLowerCase().replace(/[^a-z0-9._-]/g, '');
+  return base ? (set.isJapanese ? `${base}_ja` : base) : '';
+};
+
 function getCardImageSources(setOrName, card, large = false) {
   const set = typeof setOrName === 'object' ? setOrName : setByName.get(setOrName);
   if (!set || !card) return [];
   const rawNum = String(card.number).split('/')[0].trim();
   const num = rawNum.replace(/^0+(?=\d)/, '');
-  const pad3 = /^\d+$/.test(num) ? num.padStart(3, '0') : num;     // 50a / H1 stay as typed
+  const p3 = n => /^\d+$/.test(n) ? n.padStart(3, '0') : n;            // 50a / H1 stay as typed
+  // 103a is the card itself and 103b is its reverse holo, so both can fall back to image 103.
+  const baseNum = num.replace(/^(\d+)[a-z]$/i, '$1');
+  const nums = baseNum === num ? [num] : [num, baseNum];
   const chain = [];
 
   // 1. A URL typed in the card's own row (Col J) always wins.
@@ -345,26 +379,30 @@ function getCardImageSources(setOrName, card, large = false) {
   if (direct) chain.push(normalizeImageUrl(direct));
 
   // 2. Per-set image pattern from the Sets tab (Col J), e.g. your own scans on GitHub Pages.
-  chain.push(...imageBaseUrls(set.imageBase, num, pad3));
+  nums.forEach(n => chain.push(...imageBaseUrls(set.imageBase, n, p3(n))));
 
-  const code = artKey(set);
-  const tcgdex = set.images && set.images[cardKey(card.number)];
+  const code = artKey(set), sid = scrydexId(set);
+  const tcgdex = set.images && (set.images[cardKey(num)] || set.images[cardKey(baseNum)]);
+  const scry = () => sid ? nums.map(n => `${SCRYDEX}/${sid}-${n}/${large ? 'large' : 'medium'}`) : [];
 
   if (set.isJapanese) {
-    if (code && /^\d+$/.test(num) && (set.artCode || /^(SV|M|S|SM|XY|BW)\d/i.test(code))) {
-      const bPad = `${LIMITLESS_JP}/${code}/${code}_${pad3}_R_JP_`, bRaw = `${LIMITLESS_JP}/${code}/${code}_${num}_R_JP_`;
+    if (code && /^\d+$/.test(baseNum) && (set.artCode || /^(SV|M|S|SM|XY|BW)\d/i.test(code))) {
+      const bPad = `${LIMITLESS_JP}/${code}/${code}_${p3(baseNum)}_R_JP_`, bRaw = `${LIMITLESS_JP}/${code}/${code}_${baseNum}_R_JP_`;
       chain.push(...(large ? [`${bRaw}LG.png`, `${bRaw}SM.png`, `${bPad}LG.png`, `${bPad}SM.png`] : [`${bRaw}SM.png`, `${bPad}SM.png`, `${bRaw}LG.png`]));   // unpadded numbers are the verified Limitless pattern
     }
+    chain.push(...scry());
     if (tcgdex) chain.push(`${tcgdex}/high.webp`, `${tcgdex}/high.png`, `${tcgdex}/low.webp`);
     return [...new Set(chain)];            // Japanese sets never use English art
   }
 
-  if (set.artCode && /^\d+$/.test(num)) {
+  // English: an explicit Art code (Sets col I) first, then Scrydex, then the older sources.
+  if (set.artCode && /^\d+$/.test(baseNum)) {
     const c = set.artCode.toUpperCase();
-    chain.push(`${LIMITLESS_EN}/${c}/${c}_${pad3}_R_EN_LG.png`, `${LIMITLESS_EN}/${c}/${c}_${pad3}_R_EN_SM.png`);
+    chain.push(`${LIMITLESS_EN}/${c}/${c}_${p3(baseNum)}_R_EN_LG.png`, `${LIMITLESS_EN}/${c}/${c}_${p3(baseNum)}_R_EN_SM.png`);
   }
+  chain.push(...scry());
   const ptcg = set.ptcg || (set.code ? ptcgCode(String(set.code).toLowerCase()) : '');
-  if (ptcg) chain.push(`https://images.pokemontcg.io/${ptcg}/${num}.png`);
+  if (ptcg) nums.forEach(n => chain.push(`https://images.pokemontcg.io/${ptcg}/${n}.png`));
   if (tcgdex) chain.push(`${tcgdex}/high.webp`, `${tcgdex}/high.png`);
   return [...new Set(chain)];
 }
@@ -415,7 +453,7 @@ async function fetchText(url, ms = CONFIG.fetchTimeoutMs) {
   } finally { clearTimeout(t); }
 }
 
-// Sets tab: A Code/Tab • B Name • C Release date • D Cover card # • E Language • F Owned • G Total • H % • I Art code • J Image base
+// Sets tab: A Code/Tab • B Name • C Release date • D Cover card # • E Language • F Owned • G Total • H % • I Art code • J Image base • K Scrydex id
 let manifestProblems = [];
 
 function rowsToManifest(rows) {
@@ -434,7 +472,7 @@ function rowsToManifest(rows) {
       releaseDate: (r[2] || '').trim(), coverCard: (r[3] || '').trim(),
       lang: /jp/i.test(r[4] || '') ? 'JP' : 'EN',
       manifestOwned: owned, manifestTotal: total, manifestPct: isNaN(pct) ? 0 : Math.round(pct),
-      artCode: (r[8] || '').trim(), imageBase: (r[9] || '').trim()
+      artCode: (r[8] || '').trim(), imageBase: (r[9] || '').trim(), scrydexId: (r[10] || '').trim()
     });
   }
   return manifest.length ? manifest : null;
@@ -516,7 +554,7 @@ async function syncLiveSheet({ background = false } = {}) {
         id, code: m.code, tab: m.tab, name: m.name, lang: isJp ? 'JP' : 'EN', isJapanese: isJp, tabIndex: idx,
         releaseDate: m.releaseDate || (old && old.releaseDate) || null,
         year: (m.releaseDate.match(/\b(19\d\d|20\d\d)\b/) || [])[1] || (old && old.year) || null,
-        coverCard: m.coverCard, artCode: m.artCode, imageBase: m.imageBase,
+        coverCard: m.coverCard, artCode: m.artCode, imageBase: m.imageBase, scrydexId: m.scrydexId,
         manifestOwned: m.manifestOwned, manifestTotal: m.manifestTotal, manifestPct: m.manifestPct,
         cards: hasCards ? old.cards : [],
         isLoaded: hasCards, stale: hasCards,            // old cards show instantly, then refresh when opened

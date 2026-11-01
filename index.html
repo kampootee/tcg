@@ -893,6 +893,7 @@ function renderToolbar() {
   $('topFilters').innerHTML = FILTERS.map(([k, l]) => `<button data-action="filter" data-filter="${k}" class="px-3 py-1.5 rounded-lg font-medium transition ${appData.filterStatus === k ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'}">${l}</button>`).join('');
   const vm = (mode, icon, label) => `<button data-action="view" data-mode="${mode}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition ${appData.viewMode === mode ? 'text-poke-yellow bg-slate-800' : 'text-slate-400 hover:text-white'}"><i data-lucide="${icon}" class="w-4 h-4"></i><span class="text-xs">${label}</span></button>`;
   $('viewModeToggleGroup').innerHTML = vm('table', 'list', 'Table') + vm('grid', 'layout-grid', 'Grid');
+  $('viewModeToggleGroup').classList.add('hidden');
 }
 
 function renderMainContent() {
@@ -902,7 +903,7 @@ function renderMainContent() {
   $('noSetsFallback').classList.toggle('hidden', !empty || loadingFirst);
   if (empty) { container.innerHTML = loadingFirst ? `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4" role="status" aria-label="Loading your collection">${'<div class="rounded-2xl bg-slate-900 border border-slate-800/80 aspect-[2.5/3.6] animate-pulse"></div>'.repeat(6)}</div>` : ''; $('viewModeToggleGroup').classList.add('hidden'); back.classList.add('hidden'); back.classList.remove('inline-flex'); return; }
   const active = !!appData.activeSetId;
-  $('viewModeToggleGroup').classList.toggle('hidden', !active);
+  $('viewModeToggleGroup').classList.add('hidden');
   back.classList.toggle('hidden', !active); back.classList.toggle('inline-flex', active);
   active ? renderActiveSetView(container) : renderLibraryShelf(container);
 }
@@ -981,28 +982,26 @@ function renderActiveSetView(container) {
   const cards = set.cards.filter(c => (!q || c._q.includes(q)) && (f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0)));
   const st = getSetStats(set);
   const tab = (k, label, n, color) => `<button data-action="filter" data-filter="${k}" class="px-2.5 py-1 rounded-lg font-medium transition ${f === k ? `${color} bg-slate-800` : 'text-slate-400 hover:text-white'}">${label} (${n})</button>`;
-  const date = formatReleaseDate(set.releaseDate) || set.year || 'Expansion';
+  const vm = (mode, icon, label) => `<button data-action="view" data-mode="${mode}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition ${appData.viewMode === mode ? 'text-poke-yellow bg-slate-800' : 'text-slate-400 hover:text-white'}"><i data-lucide="${icon}" class="w-4 h-4"></i><span class="text-xs">${label}</span></button>`;
+  const viewToggle = `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs flex-shrink-0">${vm('table', 'list', 'Table')}${vm('grid', 'layout-grid', 'Grid')}</div>`;
+  const copyMissing = f === 'need' ? `<button data-action="copy-missing" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm" title="Copy all missing cards formatted as 001 Card Name"><i data-lucide="copy" class="w-3.5 h-3.5 text-amber-400"></i><span>Copy Missing</span></button>` : '';
   container.innerHTML = `<div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-lg">
-    <div id="setActionBar" class="sticky top-14 sm:top-16 z-30 p-3 sm:p-4 rounded-t-2xl flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md shadow-md">
-      <div class="flex items-center justify-between gap-2 sm:gap-3">
-        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-          <button data-action="library" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition flex-shrink-0 shadow-sm" title="Return to Expansions Library"><i data-lucide="arrow-left" class="w-4 h-4 text-poke-yellow"></i><span>Library</span></button>
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5 sm:gap-2 truncate">
-              ${set.isJapanese ? `<span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-red-600/80 text-white flex-shrink-0">JP 🇯🇵</span>` : ''}
-              <div class="truncate">${formatSplitTitle(set.name)}</div>
-              <span class="px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 flex-shrink-0">${esc(date)}</span>
-            </div>
-            <div class="hidden sm:flex items-center gap-2 text-[11px] text-slate-400 mt-0.5"><span>${st.owned} of ${st.total} Cards</span><span>•</span><span class="${st.pct === 100 ? 'text-emerald-400 font-bold' : ''}">${st.pct}% Complete</span>${st.dupes ? `<span>•</span><span class="text-blue-400 font-semibold">${st.dupes} Dupes</span>` : ''}</div>
-          </div>
+    <div id="setActionBar" class="sticky top-14 sm:top-16 z-30 p-3 sm:p-4 rounded-t-2xl flex flex-col gap-3 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md shadow-md">
+      <div class="flex items-center justify-between gap-3 min-w-0">
+        <div class="min-w-0 flex items-center gap-2">
+          ${set.isJapanese ? `<span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-red-600/80 text-white flex-shrink-0">JP 🇯🇵</span>` : ''}
+          <div class="font-display font-bold text-sm sm:text-base text-white truncate">${formatSplitTitle(set.name)}</div>
         </div>
-        <div class="sm:hidden flex flex-col items-end flex-shrink-0"><span class="text-xs font-bold ${st.pct === 100 ? 'text-emerald-400' : 'text-slate-300'}">${st.pct}%</span><span class="text-[9px] text-slate-400">${st.owned}/${st.total}</span></div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="text-xs sm:text-sm font-bold ${st.pct === 100 ? 'text-emerald-400' : 'text-poke-yellow'}">${st.pct}%</span>
+          <div class="hidden sm:block w-20 md:w-28 bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400 h-full rounded-full" style="width:${st.pct}%"></div></div>
+        </div>
       </div>
-      <div class="flex flex-col md:items-end gap-1.5 sm:gap-2">
-        <div class="hidden md:block w-48 text-right"><div class="text-[11px] font-medium text-slate-400 mb-1">${st.pct}% Collected</div><div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden"><div class="bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400 h-full rounded-full" style="width:${st.pct}%"></div></div></div>
-        <div class="flex items-center gap-2 self-start md:self-auto flex-wrap">
-          <button data-action="copy-missing" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm" title="Copy all missing cards formatted as 001 Card Name"><i data-lucide="copy" class="w-3.5 h-3.5 text-amber-400"></i><span>Copy Missing</span></button>
-          <div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs overflow-x-auto max-w-full">${tab('all', 'All', st.total, 'text-white')}${tab('need', 'Missing', st.needed, 'text-amber-400')}${tab('own', 'Owned', st.owned, 'text-emerald-400')}${tab('dupe', 'Dupes', st.dupes, 'text-blue-400')}</div>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs overflow-x-auto max-w-full">${tab('all', 'All', st.total, 'text-white')}${tab('need', 'Missing', st.needed, 'text-amber-400')}${tab('own', 'Owned', st.owned, 'text-emerald-400')}${tab('dupe', 'Dupes', st.dupes, 'text-blue-400')}</div>
+        <div class="flex items-center gap-2 flex-wrap">
+          ${copyMissing}
+          ${viewToggle}
         </div>
       </div>
     </div>

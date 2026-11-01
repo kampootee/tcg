@@ -240,6 +240,7 @@ const CONFIG = {
   dexKey: 'poke_vault_dex5',
   fetchTimeoutMs: 12000,
   storageKey: 'poke_vault_config_v5',
+  gridArtPosition: '50% 12%',      // Grid view backdrop: which part of the card art shows. Lower % = higher up the card (more art, less attack text); raise it to shift down
   loadAllForSought: true,          // load every shown set's card tab after each sync so the "Most sought after" box is complete (false = only sets you open)
   cacheKey: 'poke_vault_cache_v6'
 };
@@ -451,6 +452,7 @@ function getCardImageSources(setOrName, card, large = false) {
   // 2. Per-set image pattern from the Sets tab (Col J), e.g. your own scans on GitHub Pages.
   nums.forEach(n => chain.push(...imageBaseUrls(set.imageBase, n, p3(n))));
 
+  if (!num) return [...new Set(chain)];            // blank number (Google dropped it): nothing sensible to look up
   const code = artKey(set), sid = scrydexId(set);
   const tcgdex = set.images && (set.images[cardKey(num)] || set.images[cardKey(baseNum)]);
   const scry = () => sid ? nums.map(n => `${SCRYDEX}/${sid}-${n}/${large ? 'large' : 'medium'}`) : [];
@@ -601,7 +603,7 @@ async function fetchTab(sheetId, tabName, meta = {}) {
   } catch (err) { return null; }
 }
 
-let syncing = false;
+let syncing = false, firstLoad = false;   // firstLoad: no cached data yet and a sync is about to run
 async function syncLiveSheet({ background = false } = {}) {
   const { sheetId } = appData.cfg;
   if (!sheetId || syncing) return false;
@@ -650,6 +652,7 @@ async function syncLiveSheet({ background = false } = {}) {
     return false;
   } finally {
     syncing = false;
+    if (firstLoad) { firstLoad = false; if (!appData.sets.length) renderApp(); }   // a failed first sync now shows the connect / error panel
     $('quickSyncBtn').classList.remove('animate-spin');
     fetchBtn.disabled = false;
     fetchBtn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> <span>Save & Sync Now</span>`;
@@ -686,9 +689,11 @@ function preloadOwnedSets() {
   preloading = (async () => {
     for (let i = 0; i < todo.length; i += 4) {
       await Promise.all(todo.slice(i, i + 4).map(s => loadSetCardsOnDemand(s, { silent: true })));
-      renderStats(); if (!appData.activeSetId) renderMainContent(); icons();
+      renderStats();                                                           // cheap: keeps the top row current
+      if (!appData.activeSetId && appData.searchQuery.trim()) renderMainContent();   // only needed while search results are filling in
+      icons();
     }
-  })().finally(() => { preloading = null; renderStats(); icons(); });
+  })().finally(() => { preloading = null; renderStats(); if (!appData.activeSetId) renderMainContent(); icons(); });
   return preloading;
 }
 
@@ -853,6 +858,11 @@ function statTile(color, icon, label, value, extra = '') {
 }
 
 function renderStats() {
+  if (firstLoad && !appData.sets.length) {
+    const block = c => `<div class="${c} h-[60px] rounded-xl bg-slate-900/80 border border-slate-800 animate-pulse"></div>`;
+    $('statsSection').innerHTML = block('') + block('') + block('col-span-2');
+    return;
+  }
   const rows = appData.sets.filter(isVisible).map(s => ({ s, st: getSetStats(s) }));
   const owned = rows.reduce((n, r) => n + r.st.owned, 0), total = rows.reduce((n, r) => n + r.st.total, 0);
   const pct = !total ? 0 : owned >= total ? 100 : Math.min(99, Math.round(owned / total * 100));   // never 100% while a card is missing
@@ -888,9 +898,9 @@ function renderToolbar() {
 function renderMainContent() {
   const container = $('setsContainer'), back = $('navBackToLibraryBtn');
   renderToolbar();
-  const empty = !appData.sets.length;
-  $('noSetsFallback').classList.toggle('hidden', !empty);
-  if (empty) { container.innerHTML = ''; $('viewModeToggleGroup').classList.add('hidden'); back.classList.add('hidden'); back.classList.remove('inline-flex'); return; }
+  const empty = !appData.sets.length, loadingFirst = empty && firstLoad;
+  $('noSetsFallback').classList.toggle('hidden', !empty || loadingFirst);
+  if (empty) { container.innerHTML = loadingFirst ? `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4" role="status" aria-label="Loading your collection">${'<div class="rounded-2xl bg-slate-900 border border-slate-800/80 aspect-[2.5/3.6] animate-pulse"></div>'.repeat(6)}</div>` : ''; $('viewModeToggleGroup').classList.add('hidden'); back.classList.add('hidden'); back.classList.remove('inline-flex'); return; }
   const active = !!appData.activeSetId;
   $('viewModeToggleGroup').classList.toggle('hidden', !active);
   back.classList.toggle('hidden', !active); back.classList.toggle('inline-flex', active);
@@ -912,11 +922,13 @@ function renderSetCard(set) {
 
 function renderLibraryShelf(container) {
   const q = appData.searchQuery.toLowerCase().trim();
-  const sets = appData.sets.filter(isVisible).filter(s => !q || s.name.toLowerCase().includes(q) || (s.cards || []).some(c => c._q.includes(q)));
+  const f = appData.filterStatus;
+  const passes = c => f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0);
+  const sets = appData.sets.filter(isVisible).filter(s => !q || s.name.toLowerCase().includes(q) || (s.cards || []).some(c => c._q.includes(q) && passes(c)));
   let html = '';
   if (q) {
     const hits = [];
-    appData.sets.filter(isVisible).forEach(set => (set.cards || []).forEach(card => { if (card._q.includes(q)) hits.push({ set, card }); }));
+    appData.sets.filter(isVisible).forEach(set => (set.cards || []).forEach(card => { if (card._q.includes(q) && passes(card)) hits.push({ set, card }); }));
     const loading = !!preloading;
     if (hits.length || loading) {
       html += `<div class="mb-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
@@ -1026,7 +1038,7 @@ function renderCardsGrid(set, cards) {
   return `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">${cards.map(c => {
     const num = pad(c.number), art = getCardImageSources(set, c)[0] || '';
     return `<div class="holo-sheen group/card relative flex flex-col justify-between p-3.5 rounded-xl border transition-all ${c.status === 'need' ? 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:shadow-md' : 'bg-slate-900/80 border-slate-800 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-950/40'}">
-      <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="" aria-hidden="true" loading="lazy" decoding="async" class="card-art-bg absolute inset-0 w-full h-full rounded-xl object-cover pointer-events-none opacity-25 transition-transform duration-300 group-hover/card:scale-105">
+      <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="" aria-hidden="true" loading="lazy" decoding="async" style="object-position:${CONFIG.gridArtPosition}" class="card-art-bg absolute inset-0 w-full h-full rounded-xl object-cover pointer-events-none opacity-25 transition-transform duration-300 group-hover/card:scale-105">
       <div class="absolute inset-0 rounded-xl pointer-events-none bg-gradient-to-t from-slate-950/90 via-slate-900/70 to-transparent"></div>
       <div class="relative z-10 flex items-center justify-between gap-1 mb-2"><span class="font-mono text-xs font-semibold text-slate-400">#${esc(num)}</span>
         <div class="flex items-center gap-1 flex-wrap justify-end">${typeBadge(c, 'text-[9px] px-1.5 py-0.5')}${rarityBadge(c, 'text-[10px] px-1.5 py-0.5')}${noteBadge(c, 'bookmark', 'text-[9px] px-1.5 py-0.5', 'max-w-[55px] truncate hidden sm:inline')}</div></div>
@@ -1100,9 +1112,10 @@ const openModal = id => {
 };
 const closeModal = id => {
   const modal = $(id);
-  if (!modal) return;
+  if (!modal || modal.classList.contains('hidden')) return;      // Escape calls this for every modal, open or not
   modal.classList.add('hidden');
-  if (modalLastFocus && typeof modalLastFocus.focus === 'function') modalLastFocus.focus();
+  const back = modalLastFocus; modalLastFocus = null;
+  if (back && typeof back.focus === 'function') back.focus({ preventScroll: true });
 };
 
 function showToast(message, type = 'info') {
@@ -1219,6 +1232,7 @@ function copyMissingCards() {
 /* ==========================================================
    EVENT HANDLERS
    ========================================================== */
+const scrollBehavior = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 let returnToSetId = null;
 function scrollLibraryToSet(setId) {
   if (!setId) return;
@@ -1228,7 +1242,7 @@ function scrollLibraryToSet(setId) {
     const header = document.querySelector('body > header');
     const offset = header ? header.getBoundingClientRect().height : 0;
     const top = tile.getBoundingClientRect().top + window.scrollY - offset - 8;
-    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    window.scrollTo({ top: Math.max(0, top), behavior: scrollBehavior() });
   });
 }
 
@@ -1238,16 +1252,17 @@ function scrollSetActionBarIntoView() {
   const siteHeader = document.querySelector('body > header');
   const headerHeight = siteHeader ? siteHeader.getBoundingClientRect().height : 0;
   const targetTop = bar.getBoundingClientRect().top + window.scrollY - headerHeight;
-  window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+  window.scrollTo({ top: Math.max(0, targetTop), behavior: scrollBehavior() });
 }
 
 async function openSet(set) {
   renderApp();
+  const hadBar = !!$('setActionBar');                // cached cards: the set is already on screen, so don't scroll again after the refresh
   requestAnimationFrame(scrollSetActionBarIntoView);
   if (!set.isLoaded || set.stale) {
     await loadSetCardsOnDemand(set);
     renderApp();
-    requestAnimationFrame(scrollSetActionBarIntoView);
+    if (!hadBar && appData.activeSetId === set.id) requestAnimationFrame(scrollSetActionBarIntoView);
   }
 }
 
@@ -1354,6 +1369,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   } catch (e) {}
 
+  firstLoad = !cached && !!c.sheetId && c.autoSync !== false;
   renderApp();
   if (cached) scheduleEnrich();
   if (c.sheetId && c.autoSync !== false) syncLiveSheet({ background: cached });

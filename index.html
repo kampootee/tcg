@@ -131,7 +131,7 @@
       <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-xs text-emerald-200/90 space-y-1">
         <div class="flex items-center gap-2 font-semibold text-emerald-300"><i data-lucide="check-check" class="w-4 h-4"></i> The "Sets" tab drives the library</div>
         <p class="text-[10px] text-slate-400">A Code (= card tab name) • B Name • C Release date (YYYY-MM-DD) • D Cover card # • E Language (EN/JP) • F Owned • G Total • H % • I Art code (optional) • J Image base (optional, e.g. <span class="font-mono">https://you.github.io/tcg/neo1/{nnn}.jpg</span>) • K Scrydex id (optional override)</p>
-        <p class="text-[10px] text-slate-400">Card tabs: Col A (#) • B (Name) • C (Type) • E (Rarity) • F (Owned/Need) • G (Duplicates) • I (Notes) • J (Image URL, plain text).</p>
+        <p class="text-[10px] text-slate-400">Card tabs: Col A (#) • B (Name) • C (Type) • E (Rarity) • F (Owned/Need) • G (Duplicates) • I (Notes) • J (1 = most sought after, or a plain-text image URL).</p>
       </div>
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
         <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="autoSyncOnLoadCheckbox" checked class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0"><span class="text-xs text-slate-300">Auto-sync on page load</span></label>
@@ -182,6 +182,7 @@ const CONFIG = {
   dexKey: 'poke_vault_dex5',
   fetchTimeoutMs: 12000,
   storageKey: 'poke_vault_config_v5',
+  loadAllForSought: true,          // load every shown set's card tab after each sync so the "Most sought after" box is complete (false = only sets you open)
   cacheKey: 'poke_vault_cache_v6'
 };
 
@@ -196,6 +197,8 @@ const cardKey = n => { const s = String(n).split('/')[0].trim(); return /^\d+$/.
 const esc = str => str == null ? '' : String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 const pad = n => { const v = String(n ?? '').trim(); return !v ? '?' : /^\d+$/.test(v) ? v.padStart(3, '0') : v; };
 const isOwned = c => c.status !== 'need';
+// A set is shown only if column F of the Sets tab holds a number above 0. Loaded cards never change that.
+const isVisible = s => Number(s.manifestOwned) > 0;
 
 const appData = {
   sets: [], filterStatus: 'all', searchQuery: '', viewMode: 'table', activeSetId: null,
@@ -203,6 +206,8 @@ const appData = {
 };
 let setByName = new Map();
 
+let cacheTimer = null;
+const saveCacheSoon = () => { clearTimeout(cacheTimer); cacheTimer = setTimeout(saveCache, 400); };
 function saveState() { store.set(CONFIG.storageKey, JSON.stringify(appData.cfg)); }
 // Images/search text are rebuilt on load, so they are not saved.
 function saveCache() {
@@ -309,7 +314,7 @@ async function runEnrich() {
   if (enriching) return scheduleEnrich();
   enriching = true;
   try {
-    const todo = appData.sets.filter(s => !s.enriched && (getSetStats(s).owned > 0 || (s.cards || []).length));
+    const todo = appData.sets.filter(s => !s.enriched && isVisible(s));
     if (!todo.length) return;
     await Promise.all(todo.map(s => enrichSet(s).catch(() => false).then(() => { s.enriched = true; })));
     dexSave();
@@ -549,7 +554,7 @@ async function syncLiveSheet({ background = false } = {}) {
       const isJp = m.lang === 'JP' || /\[jp\]|^jp[\s\-_]/i.test(m.name) || /\[jp\]|^jp[\s\-_]/i.test(m.code);
       const id = (isJp ? 'jp_' : 'en_') + cleanKey(m.code);
       const old = prev.get(id);
-      const hasCards = !!(old && old.cards && old.cards.length);
+      const hasCards = !!(old && old.cards && old.cards.length) && m.manifestOwned > 0;   // F = 0 unloads the set
       return {
         id, code: m.code, tab: m.tab, name: m.name, lang: isJp ? 'JP' : 'EN', isJapanese: isJp, tabIndex: idx,
         releaseDate: m.releaseDate || (old && old.releaseDate) || null,
@@ -562,13 +567,15 @@ async function syncLiveSheet({ background = false } = {}) {
       };
     });
     appData.sets = sortSets(fresh);
+    if (appData.activeSetId && !appData.sets.some(x => x.id === appData.activeSetId && isVisible(x))) appData.activeSetId = null;
     appData.cfg.lastSynced = new Date().toISOString();
     const dg = $('syncDiagnostics'); if (dg) dg.classList.add('hidden');
     saveState(); saveCache(); updateSyncBadge(); renderApp();
     scheduleEnrich();
+    if (CONFIG.loadAllForSought) preloadOwnedSets();
     const open = appData.sets.find(s => s.id === appData.activeSetId);
     if (open) loadSetCardsOnDemand(open).then(renderApp);
-    if (!background) showToast(`Loaded ${appData.sets.filter(s => getSetStats(s).owned > 0).length} active expansions from the Sets tab.`, 'success');
+    if (!background) showToast(`Loaded ${appData.sets.filter(isVisible).length} active expansions from the Sets tab.`, 'success');
     return true;
   } catch (err) {
     console.error('Sync error:', err);
@@ -594,7 +601,7 @@ function loadSetCardsOnDemand(set, { silent = false } = {}) {
     const fetched = await fetchTab(appData.cfg.sheetId, set.tab, set);
     if (fetched) {
       Object.assign(set, { cards: fetched.cards, blankNumbers: fetched.blankNumbers, isLoaded: true, stale: false, loadFailed: false, enriched: false });
-      scheduleEnrich(); saveCache();
+      scheduleEnrich(); saveCacheSoon();
     } else {
       set.loadFailed = true;
       if (!silent && !(set.cards || []).length) showToast(`Couldn't load tab "${set.tab}".`, 'error');
@@ -609,14 +616,14 @@ function loadSetCardsOnDemand(set, { silent = false } = {}) {
 let preloading = null;
 function preloadOwnedSets() {
   if (preloading) return preloading;
-  const todo = appData.sets.filter(s => getSetStats(s).owned > 0 && (!s.isLoaded || s.stale) && !s.loadFailed);
+  const todo = appData.sets.filter(s => isVisible(s) && (!s.isLoaded || s.stale) && !s.loadFailed);
   if (!todo.length) return null;
   preloading = (async () => {
     for (let i = 0; i < todo.length; i += 4) {
       await Promise.all(todo.slice(i, i + 4).map(s => loadSetCardsOnDemand(s, { silent: true })));
-      if (!appData.activeSetId) renderApp();
+      renderStats(); if (!appData.activeSetId) renderMainContent(); icons();
     }
-  })().finally(() => { preloading = null; });
+  })().finally(() => { preloading = null; renderStats(); icons(); });
   return preloading;
 }
 
@@ -668,9 +675,12 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     const notes = (r[notesIdx] ?? '').trim();
     // Image URL: the detected column first, then any cell from column J onward.
     const imageUrl = (imageIdx !== -1 && cellUrl(r[imageIdx])) || r.slice(9).map(cellUrl).find(Boolean) || '';
+    // Column J: a number above 0 (or yes/x) marks the card as sought after; a larger number ranks it higher. A URL there is an image, not a flag.
+    const wantRaw = String(r[9] ?? '').trim();
+    const want = cellUrl(wantRaw) ? 0 : (parseFloat(wantRaw) > 0 ? parseFloat(wantRaw) : (/^(y|yes|x|true)$/i.test(wantRaw) ? 1 : 0));
     cards.push({
       number, name, type: (r[2] || '').trim(), rarity: (r[4] || r[3] || 'Common').trim(),
-      status: own ? 'own' : 'need', duplicates: vG > 0 ? Math.floor(vG) : 0, notes, imageUrl,
+      status: own ? 'own' : 'need', duplicates: vG > 0 ? Math.floor(vG) : 0, notes, imageUrl, want,
       _q: `${name} ${number} ${notes}`.toLowerCase()
     });
   }
@@ -778,18 +788,29 @@ function statTile(color, icon, label, value, extra = '') {
 }
 
 function renderStats() {
-  const t = { total: 0, owned: 0, needed: 0, dupes: 0 };
-  appData.sets.forEach(s => { const x = getSetStats(s); for (const k in t) t[k] += x[k]; });
-  const pct = t.total ? Math.round(t.owned / t.total * 100) : 0;
+  const rows = appData.sets.filter(isVisible).map(s => ({ s, st: getSetStats(s) }));
+  const owned = rows.reduce((n, r) => n + r.st.owned, 0), total = rows.reduce((n, r) => n + r.st.total, 0);
+  const pct = !total ? 0 : owned >= total ? 100 : Math.min(99, Math.round(owned / total * 100));   // never 100% while a card is missing
+  const done = rows.filter(r => r.st.total > 0 && r.st.owned >= r.st.total).length;
+  const short = n => String(n).split(/[:\u2014\u2013]/).pop().trim();
+  // Cards flagged in column J that you still need: highest number first, then set order, then card order.
+  const sought = [];
+  appData.sets.filter(isVisible).forEach((set, si) => (set.cards || []).forEach((card, ci) => { if (card.want > 0 && card.status === 'need') sought.push({ set, card, si, ci }); }));
+  sought.sort((a, b) => b.card.want - a.card.want || a.si - b.si || a.ci - b.ci);
+  const soughtHtml = sought.length ? `<div class="grid grid-cols-2 gap-1.5">${sought.slice(0, 4).map(({ set, card }) => `<button type="button" data-action="open-set" data-id="${esc(set.id)}" title="${esc(card.name)} - ${esc(set.name)}" class="group/want flex items-center gap-2 text-left rounded-lg p-1 hover:bg-slate-800/60 transition min-w-0">
+      <span class="w-7 h-10 rounded bg-slate-950 border border-slate-800 overflow-hidden flex-shrink-0 group-hover/want:border-poke-yellow transition">${imgTag(set, card, 'w-full h-full object-cover')}</span>
+      <span class="min-w-0"><span class="block truncate text-[11px] font-semibold text-slate-100 group-hover/want:text-poke-yellow transition">${esc(card.name)}</span><span class="block truncate text-[10px] text-slate-500">#${esc(pad(card.number))} &middot; ${esc(short(set.name))}</span></span></button>`).join('')}</div>`
+    : `<p class="text-[11px] text-slate-500 px-1">${preloading ? 'Checking your sets...' : 'No wanted cards flagged yet.'}</p>`;
   $('statsSection').innerHTML =
-    statTile('emerald', 'check-circle', 'Owned', `<span class="font-display text-lg sm:text-xl font-bold text-white leading-none">${t.owned}</span><span class="text-[10px] text-slate-500">/ ${t.total}</span>`) +
-    statTile('amber', 'help-circle', 'Needed', `<span class="font-display text-lg sm:text-xl font-bold text-amber-400 leading-none">${t.needed}</span>`) +
-    statTile('blue', 'copy', 'Duplicates', `<span class="font-display text-lg sm:text-xl font-bold text-blue-400 leading-none">${t.dupes}</span>`) +
-    `<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2.5 shadow-sm col-span-2 md:col-span-1">
+    statTile('emerald', 'check-circle', 'Owned', `<span class="font-display text-lg sm:text-xl font-bold text-white leading-none">${owned}</span><span class="text-[10px] text-slate-500">/ ${total}</span>`) +
+    `<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2.5 shadow-sm">
       <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 flex-shrink-0"><i data-lucide="trophy" class="w-4 h-4"></i></div>
       <div class="flex-1 min-w-0"><div class="flex justify-between items-center leading-tight"><span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Complete</span><span class="text-[11px] font-bold text-purple-300">${pct}%</span></div>
-      <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden"><div class="bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400 h-full rounded-full transition-all duration-500" style="width:${pct}%"></div></div></div></div>`;
-}
+      <div class="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden"><div class="bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400 h-full rounded-full transition-all duration-500" style="width:${pct}%"></div></div>
+      <div class="text-[10px] text-slate-500 mt-1 truncate">${done} of ${rows.length} sets complete</div></div></div>
+    <div class="col-span-2 bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 shadow-sm">
+      <div class="flex items-center gap-2 mb-1"><i data-lucide="star" class="w-3.5 h-3.5 text-amber-400"></i><span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Most sought after</span>${sought.length > 4 ? `<span class="text-[10px] text-slate-500">+${sought.length - 4} more</span>` : ''}</div>
+      ${soughtHtml}</div>`;}
 
 const FILTERS = [['all', 'All'], ['need', 'Need'], ['own', 'Owned'], ['dupe', 'Duplicates']];
 function renderToolbar() {
@@ -825,11 +846,11 @@ function renderSetCard(set) {
 
 function renderLibraryShelf(container) {
   const q = appData.searchQuery.toLowerCase().trim();
-  const sets = appData.sets.filter(s => getSetStats(s).owned > 0).filter(s => !q || s.name.toLowerCase().includes(q) || (s.cards || []).some(c => c._q.includes(q)));
+  const sets = appData.sets.filter(isVisible).filter(s => !q || s.name.toLowerCase().includes(q) || (s.cards || []).some(c => c._q.includes(q)));
   let html = '';
   if (q) {
     const hits = [];
-    appData.sets.forEach(set => (set.cards || []).forEach(card => { if (card._q.includes(q)) hits.push({ set, card }); }));
+    appData.sets.filter(isVisible).forEach(set => (set.cards || []).forEach(card => { if (card._q.includes(q)) hits.push({ set, card }); }));
     const loading = !!preloading;
     if (hits.length || loading) {
       html += `<div class="mb-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
@@ -842,6 +863,7 @@ function renderLibraryShelf(container) {
         </div></div>`;
     }
   }
+  if (!sets.length && !q) { container.innerHTML = `<div class="py-16 text-center text-xs text-slate-400 bg-slate-900/60 border border-slate-800 rounded-2xl">No sets to show yet. A set appears once column F of its row in the Sets tab holds a number above 0.</div>`; return; }
   const section = (list, header) => list.length ? header + `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">${list.map(renderSetCard).join('')}</div>` : '';
   const en = sets.filter(s => (s.lang || 'EN').toUpperCase() === 'EN');
   html += section(en, `<div class="mb-3 flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="library" class="w-5 h-5 text-poke-yellow"></i><h2 class="font-display font-bold text-lg text-white">English Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">${en.length} Sets</span></div><span class="text-xs text-slate-400 hidden sm:inline">Select a set to inspect cards</span></div>`);

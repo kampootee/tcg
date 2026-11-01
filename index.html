@@ -33,6 +33,11 @@
   .holo-sheen::after { content: ''; position: absolute; top: -100%; left: -100%; width: 300%; height: 300%; background: linear-gradient(135deg, rgba(255,255,255,0) 25%, rgba(255,255,255,.22) 50%, rgba(255,255,255,0) 75%); transform: rotate(25deg) translate(-25%, -25%); pointer-events: none; opacity: 0; transition: opacity .3s ease, transform .6s ease; }
   .holo-sheen:hover::after { opacity: 1; transform: rotate(25deg) translate(25%, 25%); }
   .card-art-bg { background-size: cover; background-position: center top; transition: opacity .35s ease, transform .4s ease, filter .35s ease; }
+  :focus-visible { outline: 2px solid #FFCB05; outline-offset: 3px; }
+  [role="button"][data-action] { cursor: pointer; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
 </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen antialiased flex flex-col selection:bg-poke-red selection:text-white overflow-x-clip">
@@ -59,7 +64,7 @@
           <span id="syncDot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
         </span>
         <span id="syncStatusLabel" class="text-[11px] font-medium text-slate-300 hidden sm:inline">Ready</span>
-        <button data-action="sync" id="quickSyncBtn" aria-label="Sync from Google Sheet" class="p-0.5 sm:p-1 hover:text-emerald-400 text-slate-400 rounded transition" title="Sync latest data from Google Sheet"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
+        <button data-action="sync" id="quickSyncBtn" aria-label="Sync from Google Sheet" class="p-0.5 sm:p-1 hover:text-emerald-400 text-slate-400 rounded transition"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i></button>
       </div>
       <button data-action="open-modal" data-id="sheetModal" class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 transition text-xs font-medium shadow-sm">
         <i data-lucide="sheet" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400"></i><span class="hidden sm:inline">Google Sheets</span><span class="sm:hidden">Sync</span>
@@ -86,7 +91,7 @@
       <button id="clearSearchBtn" data-action="clear-search" aria-label="Clear search" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-0.5 rounded-md transition"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-      <div id="topFilters" class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs"></div>
+      <div id="topFilters" class="hidden inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs"></div>
       <div id="viewModeToggleGroup" class="hidden inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs"></div>
     </div>
   </section>
@@ -105,10 +110,63 @@
   </div>
 </main>
 
-<footer class="border-t border-slate-800/80 bg-slate-950 py-6 mt-12 text-center text-xs text-slate-500">
+<div id="setupModal" role="dialog" aria-modal="true" aria-label="Google Sheets setup and instructions" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm p-4">
+  <div class="max-w-4xl w-full mx-auto my-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+    <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+      <div><h2 class="font-display text-base sm:text-lg font-bold text-white">Google Sheets Setup &amp; Instructions</h2><p class="text-xs text-slate-400 mt-1">Spreadsheet structure, syncing and troubleshooting</p></div>
+      <button data-action="close-modal" data-id="setupModal" aria-label="Close" class="text-slate-400 hover:text-white p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div class="p-4 sm:p-6">
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
+    <div class="flex items-start gap-3">
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0"><i data-lucide="sheet" class="w-5 h-5"></i></div>
+      <div><h2 class="font-display text-base sm:text-lg font-bold text-white">Google Sheets Setup &amp; How Sync Works</h2>
+        <p class="text-xs sm:text-sm text-slate-400 mt-1">Your Google Sheet is the source of truth for the collection. The app reads it; changes made in the app are not written back to the spreadsheet.</p></div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-2">
+        <h3 class="text-sm font-semibold text-emerald-300">1. The Sets tab (library index)</h3>
+        <p class="text-xs text-slate-400">Keep a tab named <strong class="text-slate-200">Sets</strong>. Each row describes one expansion. Column A must contain the exact name of that expansion's card tab; the app uses that value as the tab name.</p>
+        <ul class="text-xs text-slate-300 space-y-1.5">
+          <li><strong>A</strong> — Code / card-tab name (required)</li><li><strong>B</strong> — Set name</li><li><strong>C</strong> — Release date (YYYY-MM-DD)</li><li><strong>D</strong> — Cover card number</li><li><strong>E</strong> — Language (EN or JP)</li><li><strong>F</strong> — Number owned; only rows with a value above 0 appear in the library</li><li><strong>G</strong> — Total card count</li><li><strong>H</strong> — Completion percentage</li><li><strong>I–K</strong> — Optional art code, image base URL, and Scrydex ID override</li>
+        </ul>
+      </div>
+      <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-2">
+        <h3 class="text-sm font-semibold text-emerald-300">2. Each set's card tab</h3>
+        <p class="text-xs text-slate-400">Create one separate tab for every set. Its tab name must match the value in column A of that set's row on <strong class="text-slate-200">Sets</strong>.</p>
+        <ul class="text-xs text-slate-300 space-y-1.5">
+          <li><strong>A</strong> — Card number</li><li><strong>B</strong> — Card name</li><li><strong>C</strong> — Type</li><li><strong>E</strong> — Rarity</li><li><strong>F</strong> — Ownership status (<strong>Owned</strong> or <strong>Need</strong>)</li><li><strong>G</strong> — Duplicate count</li><li><strong>I</strong> — Notes</li><li><strong>J</strong> — Optional wanted-card priority number, or a plain-text image URL</li>
+        </ul>
+        <p class="text-xs text-slate-400">The app counts a card as owned when column F contains a number of at least 1 or text containing “own” or “yes”; otherwise it is treated as missing. A positive number in column G contributes to the duplicate total.</p>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-2">
+        <h3 class="text-sm font-semibold text-slate-200">3. Sharing and connecting</h3>
+        <ol class="list-decimal list-inside text-xs text-slate-300 space-y-1.5">
+          <li>In Google Sheets, choose <strong>Share</strong>.</li><li>Set General access to <strong>Anyone with the link — Viewer</strong>.</li><li>Use the Google Sheets button at the top of this app and paste the spreadsheet URL or ID.</li><li>Choose whether the app should automatically sync when the page loads, then select <strong>Save &amp; Sync Now</strong>.</li>
+        </ol>
+      </div>
+      <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-2">
+        <h3 class="text-sm font-semibold text-slate-200">4. What sync does</h3>
+        <ul class="text-xs text-slate-300 space-y-1.5">
+          <li>A sync reads the Sets tab first and refreshes the library index.</li><li>Card tabs are read when needed; the current configuration also preloads visible sets to populate the wanted-card summary.</li><li>Opening a set loads or refreshes that set's card tab. The app caches loaded data locally so it can display it sooner next time.</li><li>To update your collection, edit the Google Sheet itself, then use the sync icon at the top of the app.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4">
+      <h3 class="text-sm font-semibold text-amber-300 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i> If something does not load</h3>
+      <p class="text-xs text-slate-300 mt-1">Check that the spreadsheet ID is correct, link sharing allows viewers, the tab is named <strong>Sets</strong>, and every code in Sets column A exactly matches a card-tab name. If the Sets tab cannot be read, the app reports the attempted reads and keeps the existing collection data rather than replacing it with an empty library. If an individual card tab cannot be read, that set shows a load error and can be retried from its set view.</p>
+    </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="border-t border-slate-800/80 bg-slate-950 py-6 mt-4 text-center text-xs text-slate-500">
   <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
     <span>TCG Collection • Built for collectors</span>
-    <div class="flex items-center gap-4 text-slate-400"><button data-action="open-modal" data-id="sheetModal" class="hover:text-emerald-400 transition">Google Sheets Setup</button></div>
+    <div class="flex items-center gap-4 text-slate-400"><button data-action="open-modal" data-id="setupModal" class="hover:text-emerald-400 transition">Google Sheets Setup &amp; Instructions</button></div>
   </div>
 </footer>
 
@@ -144,7 +202,7 @@
   </div>
 </div>
 
-<div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+<div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none" aria-live="polite" aria-atomic="false"></div>
 
 <div id="globalNoteTooltip" class="fixed hidden z-[99999] pointer-events-none p-3 max-w-xs sm:max-w-sm rounded-xl bg-slate-900/95 border border-amber-500/60 shadow-2xl backdrop-blur-md text-slate-100 text-xs transition-opacity duration-150 transform -translate-y-2 opacity-0">
   <div class="flex items-center gap-1.5 text-[10px] text-amber-400 font-bold uppercase tracking-wider mb-1"><i data-lucide="tag" class="w-3 h-3 text-poke-yellow"></i><span id="tooltipNoteTitle">Card Note</span></div>
@@ -345,7 +403,14 @@ const artKey = set => String(set.artCode || set.code || set.tab || '').trim().re
 function normalizeImageUrl(u) {
   u = String(u || '').trim();
   const m = u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]+)/);
-  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000` : u;
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+  // Image URLs may come from Sheets or an imported backup; never allow script/data HTML schemes.
+  try {
+    const parsed = new URL(u, window.location.href);
+    return /^https?:$/.test(parsed.protocol) ? parsed.href : '';
+  } catch (e) {
+    return '';
+  }
 }
 
 function imageBaseUrls(base, num, pad3) {
@@ -381,7 +446,7 @@ function getCardImageSources(setOrName, card, large = false) {
   // 1. A URL typed in the card's own row (Col J) always wins.
   let direct = card.imageUrl || '';
   if (!direct && set.cards) { const same = set.cards.filter(c => cardKey(c.number) === cardKey(card.number)); const hit = same.find(c => c.name === card.name) || same[0]; if (hit) direct = hit.imageUrl || ''; }
-  if (direct) chain.push(normalizeImageUrl(direct));
+  if (direct) { const safeDirect = normalizeImageUrl(direct); if (safeDirect) chain.push(safeDirect); }
 
   // 2. Per-set image pattern from the Sets tab (Col J), e.g. your own scans on GitHub Pages.
   nums.forEach(n => chain.push(...imageBaseUrls(set.imageBase, n, p3(n))));
@@ -814,6 +879,7 @@ function renderStats() {
 
 const FILTERS = [['all', 'All'], ['need', 'Need'], ['own', 'Owned'], ['dupe', 'Duplicates']];
 function renderToolbar() {
+  $('topFilters').classList.toggle('hidden', !appData.searchQuery.trim());
   $('topFilters').innerHTML = FILTERS.map(([k, l]) => `<button data-action="filter" data-filter="${k}" class="px-3 py-1.5 rounded-lg font-medium transition ${appData.filterStatus === k ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'}">${l}</button>`).join('');
   const vm = (mode, icon, label) => `<button data-action="view" data-mode="${mode}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition ${appData.viewMode === mode ? 'text-poke-yellow bg-slate-800' : 'text-slate-400 hover:text-white'}"><i data-lucide="${icon}" class="w-4 h-4"></i><span class="text-xs">${label}</span></button>`;
   $('viewModeToggleGroup').innerHTML = vm('table', 'list', 'Table') + vm('grid', 'layout-grid', 'Grid');
@@ -905,7 +971,7 @@ function renderActiveSetView(container) {
   const tab = (k, label, n, color) => `<button data-action="filter" data-filter="${k}" class="px-2.5 py-1 rounded-lg font-medium transition ${f === k ? `${color} bg-slate-800` : 'text-slate-400 hover:text-white'}">${label} (${n})</button>`;
   const date = formatReleaseDate(set.releaseDate) || set.year || 'Expansion';
   container.innerHTML = `<div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-lg">
-    <div class="sticky top-14 sm:top-16 z-30 p-3 sm:p-4 rounded-t-2xl flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md shadow-md">
+    <div id="setActionBar" class="sticky top-14 sm:top-16 z-30 p-3 sm:p-4 rounded-t-2xl flex flex-col md:flex-row md:items-center justify-between gap-2.5 sm:gap-4 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md shadow-md">
       <div class="flex items-center justify-between gap-2 sm:gap-3">
         <div class="flex items-center gap-2 sm:gap-3 min-w-0">
           <button data-action="library" class="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition flex-shrink-0 shadow-sm" title="Return to Expansions Library"><i data-lucide="arrow-left" class="w-4 h-4 text-poke-yellow"></i><span>Library</span></button>
@@ -960,7 +1026,7 @@ function renderCardsGrid(set, cards) {
   return `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">${cards.map(c => {
     const num = pad(c.number), art = getCardImageSources(set, c)[0] || '';
     return `<div class="holo-sheen group/card relative flex flex-col justify-between p-3.5 rounded-xl border transition-all ${c.status === 'need' ? 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:shadow-md' : 'bg-slate-900/80 border-slate-800 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-950/40'}">
-      <div class="card-art-bg absolute inset-0 rounded-xl pointer-events-none opacity-0 group-hover/card:opacity-30 group-hover/card:scale-105 filter blur-[0.5px] group-hover/card:blur-none" data-bg="${esc(art)}"></div>
+      <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="" aria-hidden="true" loading="lazy" decoding="async" class="card-art-bg absolute inset-0 w-full h-full rounded-xl object-cover pointer-events-none opacity-25 transition-transform duration-300 group-hover/card:scale-105">
       <div class="absolute inset-0 rounded-xl pointer-events-none bg-gradient-to-t from-slate-950/90 via-slate-900/70 to-transparent"></div>
       <div class="relative z-10 flex items-center justify-between gap-1 mb-2"><span class="font-mono text-xs font-semibold text-slate-400">#${esc(num)}</span>
         <div class="flex items-center gap-1 flex-wrap justify-end">${typeBadge(c, 'text-[9px] px-1.5 py-0.5')}${rarityBadge(c, 'text-[10px] px-1.5 py-0.5')}${noteBadge(c, 'bookmark', 'text-[9px] px-1.5 py-0.5', 'max-w-[55px] truncate hidden sm:inline')}</div></div>
@@ -968,13 +1034,6 @@ function renderCardsGrid(set, cards) {
       <div class="relative z-10 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1">${statusBadge(c, 'text-xs px-2 py-0.5')}${dupeBadge(c) || '<span class="text-[11px] font-mono text-slate-600 px-1.5">-</span>'}</div></div>`;
   }).join('')}</div>`;
 }
-
-// Grid hover art is only requested on first hover.
-document.addEventListener('mouseover', e => {
-  const card = e.target.closest && e.target.closest('.holo-sheen');
-  const el = card && card.querySelector('[data-bg]');
-  if (el) { if (el.dataset.bg) el.style.backgroundImage = `url('${el.dataset.bg.replace(/'/g, '%27')}')`; el.removeAttribute('data-bg'); }
-});
 
 /* ==========================================================
    TOOLTIPS, INSPECTOR, MODALS, TOASTS
@@ -1029,8 +1088,22 @@ function hideCardInspector() {
   if (lastFocus && lastFocus.focus) lastFocus.focus();
 }
 
-const openModal = id => { $('exportDropdown').classList.add('hidden'); $(id).classList.remove('hidden'); };
-const closeModal = id => $(id).classList.add('hidden');
+let modalLastFocus = null;
+const openModal = id => {
+  $('exportDropdown').classList.add('hidden');
+  const modal = $(id);
+  if (!modal) return;
+  modalLastFocus = document.activeElement;
+  modal.classList.remove('hidden');
+  const focusTarget = modal.querySelector('input:not([type="hidden"]), button, [tabindex]:not([tabindex="-1"])');
+  if (focusTarget) requestAnimationFrame(() => focusTarget.focus());
+};
+const closeModal = id => {
+  const modal = $(id);
+  if (!modal) return;
+  modal.classList.add('hidden');
+  if (modalLastFocus && typeof modalLastFocus.focus === 'function') modalLastFocus.focus();
+};
 
 function showToast(message, type = 'info') {
   const colors = { success: 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200', error: 'bg-red-950/90 border-red-500/50 text-red-200', info: 'bg-slate-900/95 border-slate-700 text-slate-200' };
@@ -1062,7 +1135,11 @@ function updateSyncBadge() {
 function downloadFile(name, type, data) {
   const url = URL.createObjectURL(new Blob([data], { type }));
   const a = Object.assign(document.createElement('a'), { href: url, download: name });
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Give the browser time to begin consuming the object URL before releasing it.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function exportToCSV() {
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -1073,16 +1150,55 @@ function exportToCSV() {
 function exportToJSON() { downloadFile('Pokemon_TCG_Collection_Backup.json', 'application/json', JSON.stringify(appData.sets, null, 2)); showToast('JSON Backup downloaded!', 'success'); }
 function importFromJSON(file) {
   if (!file) return;
-  const r = new FileReader();
-  r.onload = e => {
+  const MAX_BACKUP_BYTES = 10 * 1024 * 1024;
+  if (file.size > MAX_BACKUP_BYTES) {
+    showToast('Backup file is too large (maximum 10 MB).', 'error');
+    return;
+  }
+  if (file.type && file.type !== 'application/json' && !/\.json$/i.test(file.name || '')) {
+    showToast('Please choose a JSON backup file.', 'error');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onerror = () => showToast('Could not read the selected backup file.', 'error');
+  reader.onload = event => {
     try {
-      const p = JSON.parse(e.target.result);
-      if (!Array.isArray(p)) throw 0;
-      p.forEach(s => { s.enriched = false; s.stale = false; s.isLoaded = !!(s.cards || []).length; (s.cards || []).forEach(c => { c._q = `${c.name} ${c.number} ${c.notes || ''}`.toLowerCase(); }); });
-      appData.sets = p; renderApp(); scheduleEnrich(); showToast('JSON backup restored successfully!', 'success');
-    } catch (err) { showToast('Failed to parse JSON file.', 'error'); }
+      const parsed = JSON.parse(event.target.result);
+      if (!Array.isArray(parsed)) throw new Error('Backup must contain a collection array.');
+      const valid = parsed.every(set =>
+        set && typeof set === 'object' && !Array.isArray(set) &&
+        typeof set.id === 'string' && typeof set.name === 'string' &&
+        Array.isArray(set.cards) &&
+        set.cards.every(card => card && typeof card === 'object' && !Array.isArray(card))
+      );
+      if (!valid) throw new Error('Backup contains an invalid set or card record.');
+
+      // Work on a fresh copy so a failed restore cannot partially replace the live collection.
+      const restored = parsed.map(set => ({
+        ...set,
+        enriched: false,
+        stale: false,
+        isLoaded: set.cards.length > 0,
+        cards: set.cards.map(card => ({
+          ...card,
+          _q: `${card.name || ''} ${card.number || ''} ${card.notes || ''}`.toLowerCase()
+        }))
+      }));
+
+      appData.sets = restored;
+      appData.activeSetId = null;
+      setByName = new Map(restored.map(set => [set.name, set]));
+      saveCache();
+      renderApp();
+      scheduleEnrich();
+      showToast('JSON backup restored successfully!', 'success');
+    } catch (error) {
+      console.warn('Backup restore rejected:', error);
+      showToast('Invalid JSON backup. Your current collection has not been changed.', 'error');
+    }
   };
-  r.readAsText(file);
+  reader.readAsText(file);
 }
 
 function copyMissingCards() {
@@ -1103,14 +1219,41 @@ function copyMissingCards() {
 /* ==========================================================
    EVENT HANDLERS
    ========================================================== */
+let returnToSetId = null;
+function scrollLibraryToSet(setId) {
+  if (!setId) return;
+  requestAnimationFrame(() => {
+    const tile = document.querySelector(`[data-action="open-set"][data-id="${CSS.escape(setId)}"]`);
+    if (!tile) return;
+    const header = document.querySelector('body > header');
+    const offset = header ? header.getBoundingClientRect().height : 0;
+    const top = tile.getBoundingClientRect().top + window.scrollY - offset - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  });
+}
+
+function scrollSetActionBarIntoView() {
+  const bar = $('setActionBar');
+  if (!bar) return;
+  const siteHeader = document.querySelector('body > header');
+  const headerHeight = siteHeader ? siteHeader.getBoundingClientRect().height : 0;
+  const targetTop = bar.getBoundingClientRect().top + window.scrollY - headerHeight;
+  window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+}
+
 async function openSet(set) {
-  renderApp(); scrollTo({ top: 120, behavior: 'smooth' });
-  if (!set.isLoaded || set.stale) { await loadSetCardsOnDemand(set); renderApp(); }
+  renderApp();
+  requestAnimationFrame(scrollSetActionBarIntoView);
+  if (!set.isLoaded || set.stale) {
+    await loadSetCardsOnDemand(set);
+    renderApp();
+    requestAnimationFrame(scrollSetActionBarIntoView);
+  }
 }
 
 const ACTIONS = {
-  library() { hideCardInspector(); appData.filterStatus = 'all'; appData.activeSetId = null; renderApp(); },
-  'open-set'(el) { appData.filterStatus = 'all'; appData.activeSetId = el.dataset.id; const s = appData.sets.find(x => x.id === el.dataset.id); if (s) openSet(s); },
+  library() { const returningFromSet = appData.activeSetId; hideCardInspector(); appData.filterStatus = 'all'; appData.activeSetId = null; renderApp(); scrollLibraryToSet(returningFromSet || returnToSetId); returnToSetId = null; },
+  'open-set'(el) { returnToSetId = el.dataset.id; appData.filterStatus = 'all'; appData.activeSetId = el.dataset.id; const s = appData.sets.find(x => x.id === el.dataset.id); if (s) openSet(s); },
   'retry-set'() { const s = appData.sets.find(x => x.id === appData.activeSetId); if (s) { s.loadFailed = false; openSet(s); } },
   sync() { syncLiveSheet(); },
   'save-sync'() { saveAndSync(); },
@@ -1147,13 +1290,23 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#exportDropdown') && !e.target.closest('#exportToggle')) $('exportDropdown').classList.add('hidden');
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { hideCardInspector(); closeModal('sheetModal'); }
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[role="button"][data-action]')) { e.preventDefault(); e.target.click(); }
+  if (e.key === 'Escape') { hideCardInspector(); closeModal('sheetModal'); closeModal('setupModal'); }
+  if ((e.key === 'Enter' || e.key === ' ') &&
+      e.target.matches &&
+      e.target.matches('[role="button"][data-action]') &&
+      !e.target.matches('button, a, input, select, textarea')) {
+    e.preventDefault();
+    e.target.click();
+  }
 });
 document.addEventListener('mouseover', e => { const n = e.target.closest('[data-note]'); if (n && !matchMedia('(hover: none)').matches) showNote(n, e); });
 document.addEventListener('mousemove', e => { if (e.target.closest && e.target.closest('[data-note]')) moveNote(e); });
 document.addEventListener('mouseout', e => { if (e.target.closest && e.target.closest('[data-note]')) hideNote(); });
-$('jsonFileInput').addEventListener('change', e => { importFromJSON(e.target.files[0]); $('exportDropdown').classList.add('hidden'); });
+$('jsonFileInput').addEventListener('change', e => {
+  importFromJSON(e.target.files[0]);
+  e.target.value = '';
+  $('exportDropdown').classList.add('hidden');
+});
 
 let searchTimer;
 function handleSearch(val) {

@@ -950,33 +950,33 @@ function renderLibraryShelf(container) {
     }
   });
   sets = sortSetsForView(sets);
-  const controls = `<div class="set-library-controls mb-3 p-3 sm:p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col gap-3">
-    <div class="flex flex-col lg:flex-row lg:items-center gap-3">
-      <div class="flex items-center justify-between gap-3 lg:flex-shrink-0"><div><h2 class="font-display font-bold text-base sm:text-lg text-white">Your Collection</h2><p class="text-xs text-slate-400 mt-0.5">${appData.libraryFilter==='wanted' ? 'Your marked wanted cards across all visible sets' : `${sets.length} sets shown · choose a set to explore its cards`}</p></div>
-        <div class="flex gap-2"><button data-action="show-sets" class="px-3 py-2 min-h-[40px] rounded-lg text-xs font-semibold border ${appData.libraryPage==='sets'?'bg-poke-yellow/15 text-poke-yellow border-poke-yellow/40':'bg-slate-950 text-slate-300 border-slate-700'}"><i data-lucide="library" class="w-3.5 h-3.5 inline mr-1"></i>Sets</button><button data-action="missing-overview" class="px-3 py-2 min-h-[40px] rounded-lg text-xs font-semibold border ${appData.libraryPage==='missing'?'bg-amber-500/15 text-amber-300 border-amber-500/40':'bg-slate-950 text-slate-300 border-slate-700'}"><i data-lucide="list-checks" class="w-3.5 h-3.5 inline mr-1"></i>Missing cards</button></div></div>
-      ${appData.libraryPage==='sets' ? '<div id="collectionSearchSlot" class="flex flex-1 min-w-0 items-center gap-2"></div>' : ''}
+const controls = `<div class="set-library-controls mb-3 p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col gap-2.5">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+      <div class="min-w-0">
+        <h2 class="font-display font-bold text-base sm:text-lg text-white leading-tight">Your Collection</h2>
+        <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">${sets.length} sets shown · choose a set to explore its cards</p>
+      </div>
+      <div id="collectionSearchSlot" class="flex flex-1 max-w-md items-center"></div>
     </div>
-    ${appData.libraryPage==='sets' ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><label class="text-xs text-slate-400">Filter sets<select data-action="library-filter" class="control-select mt-1 block w-full rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-slate-100"><option value="all" ${appData.libraryFilter==='all'?'selected':''}>All sets</option><option value="incomplete" ${appData.libraryFilter==='incomplete'?'selected':''}>Incomplete</option><option value="complete" ${appData.libraryFilter==='complete'?'selected':''}>Completed</option><option value="wanted" ${appData.libraryFilter==='wanted'?'selected':''}>Wanted cards</option></select></label><label class="text-xs text-slate-400">Sort sets<select data-action="library-sort" class="control-select mt-1 block w-full rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-slate-100"><option value="sheet" ${appData.librarySort==='sheet'?'selected':''}>Default (Release Date)</option><option value="az" ${appData.librarySort==='az'?'selected':''}>Name A–Z</option><option value="missing" ${appData.librarySort==='missing'?'selected':''}>Most cards missing</option></select></label></div>` : ''}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <label class="text-xs text-slate-400">Filter sets
+        <select data-action="library-filter" class="control-select mt-1 block w-full rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-slate-100">
+          <option value="all" ${appData.libraryFilter==='all'?'selected':''}>All sets</option>
+          <option value="incomplete" ${appData.libraryFilter==='incomplete'?'selected':''}>Incomplete</option>
+          <option value="complete" ${appData.libraryFilter==='complete'?'selected':''}>Completed</option>
+          <option value="wanted" ${appData.libraryFilter==='wanted'?'selected':''}>Wanted cards</option>
+        </select>
+      </label>
+      <label class="text-xs text-slate-400">Sort sets
+        <select data-action="library-sort" class="control-select mt-1 block w-full rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-slate-100">
+          <option value="sheet" ${appData.librarySort==='sheet'?'selected':''}>Default (Release Date)</option>
+          <option value="az" ${appData.librarySort==='az'?'selected':''}>Name A–Z</option>
+          <option value="missing" ${appData.librarySort==='missing'?'selected':''}>Most cards missing</option>
+        </select>
+      </label>
+    </div>
   </div>`;
-  if (appData.libraryPage === 'missing') {
-    const allMissing=[];
-    const missingSets = appData.sets.filter(isVisible);
-    const rarityOptions = [...new Set(missingSets.flatMap(set => (set.cards||[]).map(card=>card.rarity).filter(Boolean)))].sort((a,b)=>a.localeCompare(b));
-    const typeOptions = [...new Set(missingSets.flatMap(set => (set.cards||[]).map(card=>card.type).filter(Boolean)))].sort((a,b)=>a.localeCompare(b));
-    missingSets.forEach(set => (set.cards||[]).forEach(card => {
-      if(card.status==='need' && (!q || card._q.includes(q) || set.name.toLowerCase().includes(q)) &&
-        (appData.missingSetFilter==='all' || set.id===appData.missingSetFilter) &&
-        (appData.missingRarityFilter==='all' || card.rarity===appData.missingRarityFilter) &&
-        (appData.missingTypeFilter==='all' || card.type===appData.missingTypeFilter)) allMissing.push({set,card});
-    }));
-    const missingHtml = allMissing.length ? `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">${allMissing.map(({set,card})=>`<article class="rounded-xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-amber-500/50 transition"><button ${inspectAttrs(set.name,card)} class="block w-full p-2 text-left"><div class="aspect-[2.5/3.4] rounded-lg overflow-hidden bg-slate-950 mb-2">${imgTag(set,card,'w-full h-full object-contain')}</div><div class="text-xs font-semibold text-white truncate">${esc(card.name)}</div><div class="text-[11px] text-slate-400 mt-0.5">#${esc(pad(card.number))}</div></button><div class="px-2 pb-2 flex items-center justify-between gap-1"><span class="text-[10px] text-amber-300 truncate" title="${esc(set.name)}">${esc(set.name)}</span><button data-action="open-set" data-id="${esc(set.id)}" class="text-[10px] text-poke-yellow hover:underline flex-shrink-0">Open set</button></div></article>`).join('')}</div>` : `<div class="py-12 text-center rounded-2xl bg-slate-900/70 border border-slate-800"><i data-lucide="check-circle-2" class="w-9 h-9 text-emerald-400 mx-auto mb-2"></i><p class="text-sm font-semibold text-white">${preloading?'Loading missing cards…':'No missing cards found'}</p><p class="text-xs text-slate-400 mt-1">${preloading?'Checking your visible sets in the background.':'Your loaded collection has no cards matching this search.'}</p></div>`;
-    const missingFilters = `<div class="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-      <label class="text-xs text-slate-400">Set<select data-action="missing-filter" data-filter-kind="set" class="control-select mt-1 block w-full rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-slate-100"><option value="all">All sets</option>${missingSets.map(set=>`<option value="${esc(set.id)}" ${appData.missingSetFilter===set.id?'selected':''}>${esc(set.name)}</option>`).join('')}</select></label>
-      <label class="text-xs text-slate-400">Rarity<select data-action="missing-filter" data-filter-kind="rarity" class="control-select mt-1 block w-full rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-slate-100"><option value="all">All rarities</option>${rarityOptions.map(v=>`<option value="${esc(v)}" ${appData.missingRarityFilter===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label>
-      <label class="text-xs text-slate-400">Pokémon type<select data-action="missing-filter" data-filter-kind="type" class="control-select mt-1 block w-full rounded-lg bg-slate-950 border border-slate-700 px-3 text-sm text-slate-100"><option value="all">All types</option>${typeOptions.map(v=>`<option value="${esc(v)}" ${appData.missingTypeFilter===v?'selected':''}>${esc(v)}</option>`).join('')}</select></label>
-    </div>`;
-    container.innerHTML = controls + `<div class="mb-3 flex items-center justify-between gap-2"><div><h3 class="font-display font-bold text-lg text-white">Missing cards across your collection</h3><p class="text-xs text-slate-400">${allMissing.length} matching cards currently listed as needed${preloading?' · loading remaining sets':''}</p></div><button data-action="copy-all-missing" ${preloading?'disabled':''} class="px-3 py-2 min-h-[40px] rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:bg-amber-500/20 disabled:opacity-40 disabled:cursor-wait"><i data-lucide="copy" class="w-3.5 h-3.5 inline mr-1"></i>${preloading?'Loading…':'Copy list'}</button></div>` + missingFilters + missingHtml;
-    return;
+
   }
   if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
     const wantedCards = [];
@@ -1393,8 +1393,6 @@ const ACTIONS = {
     btn.disabled = false; btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> <span>Connect & Load Vault</span>`; icons();
   },
   'copy-missing'() { copyMissingCards(); },
-  'show-sets'() { appData.libraryPage = 'sets'; renderApp(); },
-  'missing-overview'() { appData.activeSetId = null; appData.libraryPage = 'missing'; renderApp(); const task = preloadOwnedSets(); if (task) task.then(() => { if (!appData.activeSetId && appData.libraryPage === 'missing') renderApp(); }); },
   'library-filter'(el) { appData.libraryFilter = el.value; renderApp(); if (el.value === 'wanted') { const task = preloadOwnedSets(); if (task) task.then(() => { if (!appData.activeSetId && appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') renderApp(); }); } },
   'library-sort'(el) { appData.librarySort = el.value; renderApp(); },
   'missing-filter'(el) { const k=el.dataset.filterKind; if(k==='set') appData.missingSetFilter=el.value; if(k==='rarity') appData.missingRarityFilter=el.value; if(k==='type') appData.missingTypeFilter=el.value; renderApp(); },

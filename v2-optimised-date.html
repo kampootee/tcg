@@ -1043,7 +1043,11 @@ function renderActiveSetView(container) {
   const st = getSetStats(set);
   const tab = (k, label, n, color) => `<button data-action="filter" data-filter="${k}" class="px-2.5 py-1 rounded-lg font-medium transition ${f === k ? `${color} bg-slate-800` : 'text-slate-400 hover:text-white'}">${label} (${n})</button>`;
   const vm = (mode, icon, label) => `<button data-action="view" data-mode="${mode}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition ${appData.viewMode === mode ? 'text-poke-yellow bg-slate-800' : 'text-slate-400 hover:text-white'}"><i data-lucide="${icon}" class="w-4 h-4"></i><span class="text-xs">${label}</span></button>`;
-  const viewToggle = `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs flex-shrink-0">${vm('table', 'list', 'Table')}${vm('grid', 'layout-grid', 'Grid')}</div>`;
+  const hasBinder = st.pct >= 80;
+  // If set is below 80% and user was on binder view, gracefully drop back to table
+  if (!hasBinder && appData.viewMode === 'binder') appData.viewMode = 'table';
+  const binderBtn = hasBinder ? vm('binder', 'book-open', 'Binder') : '';
+  const viewToggle = `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs flex-shrink-0">${vm('table', 'list', 'Table')}${vm('grid', 'layout-grid', 'Grid')}${binderBtn}</div>`;
   const copyMissing = f === 'need' ? `<button data-action="copy-missing" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm" title="Copy all missing cards formatted as 001 Card Name"><i data-lucide="copy" class="w-3.5 h-3.5 text-amber-400"></i><span>Copy Missing</span></button>` : '';
   container.innerHTML = `<div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-lg">
     <div id="setActionBar" class="sticky top-14 sm:top-16 z-30 p-3 sm:p-4 rounded-t-2xl flex flex-col gap-3 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md shadow-md">
@@ -1066,7 +1070,7 @@ function renderActiveSetView(container) {
         </div>
       </div>
     </div>
-    <div class="p-4 sm:p-5 bg-slate-950/40">${dataWarning(set)}${!cards.length ? `<div class="py-12 text-center text-xs text-slate-500">No cards match your filter criteria in this set.</div>` : appData.viewMode === 'grid' ? renderCardsGrid(set, cards) : renderCardsTable(set, cards)}</div></div>`;
+	<div class="p-4 sm:p-5 bg-slate-950/40">${dataWarning(set)}${!cards.length ? `<div class="py-12 text-center text-xs text-slate-500">No cards match your filter criteria in this set.</div>` : appData.viewMode === 'binder' ? renderCardsBinder(set, cards) : appData.viewMode === 'grid' ? renderCardsGrid(set, cards) : renderCardsTable(set, cards) : renderCardsTable(set, cards)}</div></div>`;<div class="p-4 sm:p-5 bg-slate-950/40">${dataWarning(set)}${!cards.length ? `<div class="py-12 text-center text-xs text-slate-500">No cards match your filter criteria in this set.</div>` : appData.viewMode === 'grid' ? renderCardsGrid(set, cards) : renderCardsTable(set, cards)}</div></div>`;
 }
 
 function renderCardsTable(set, cards) {
@@ -1104,6 +1108,58 @@ function renderCardsGrid(set, cards) {
         <div class="flex items-center gap-1 flex-wrap justify-end">${typeBadge(c, 'text-[9px] px-1.5 py-0.5')}${rarityBadge(c, 'text-[10px] px-1.5 py-0.5')}${noteBadge(c, 'bookmark', 'text-[9px] px-1.5 py-0.5', 'max-w-[55px] truncate hidden sm:inline')}</div></div>
       <div class="relative z-10 my-2"><h4 ${inspectAttrs(set.name, c)} class="font-display font-bold text-sm text-white truncate cursor-pointer hover:text-poke-yellow transition" title="${esc(c.name)}">${esc(c.name)}</h4><p class="text-[10px] text-slate-500 mt-0.5">Card #${esc(num)}</p></div>
       <div class="relative z-10 pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1">${statusBadge(c, 'text-xs px-2 py-0.5')}${dupeBadge(c) || '<span class="text-[11px] font-mono text-slate-600 px-1.5">-</span>'}</div></div>`;
+  }).join('')}</div>`;
+}
+function renderCardsBinder(set, cards) {
+  // Group cards into 9-pocket pages (3x3 grid per sheet)
+  const pageSize = 9;
+  const pages = [];
+  for (let i = 0; i < cards.length; i += pageSize) {
+    pages.push(cards.slice(i, i + pageSize));
+  }
+
+  return `<div class="space-y-8">${pages.map((pageCards, pageIdx) => {
+    const pageNum = pageIdx + 1;
+    const startCard = pad(pageCards[0].number);
+    const endCard = pad(pageCards[pageCards.length - 1].number);
+
+    return `<div>
+      <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80">
+        <span class="text-xs font-display font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <i data-lucide="book-open" class="w-3.5 h-3.5 text-poke-yellow"></i> Binder Page ${pageNum}
+        </span>
+        <span class="text-[11px] font-mono text-slate-500">Cards #${startCard}–#${endCard}</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 shadow-inner">
+        ${pageCards.map(c => {
+          const num = pad(c.number);
+          const owned = isOwned(c);
+
+          if (!owned) {
+            // Empty pocket sleeve styling for needed cards
+            return `<div ${inspectAttrs(set.name, c)} class="group/pocket relative flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-slate-800/90 bg-slate-950/40 hover:border-amber-500/40 hover:bg-slate-950/70 transition-all duration-200 cursor-pointer aspect-[2.5/3.5] text-center select-none">
+              <div class="w-8 h-8 rounded-full bg-slate-900/80 border border-slate-800 flex items-center justify-center text-slate-600 group-hover/pocket:text-amber-400 transition-colors mb-2">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </div>
+              <span class="font-mono text-xs font-bold text-slate-500 group-hover/pocket:text-amber-300 transition-colors">#${esc(num)}</span>
+              <p class="text-[11px] text-slate-600 font-medium truncate max-w-[90%] mt-0.5 group-hover/pocket:text-slate-400 transition-colors">${esc(c.name)}</p>
+              <span class="mt-2 text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500">Empty Pocket</span>
+            </div>`;
+          }
+
+          // Full card artwork pocket for owned cards
+          return `<div ${inspectAttrs(set.name, c)} class="holo-sheen group/pocket relative flex flex-col justify-end p-2.5 rounded-xl border border-slate-800/90 bg-slate-900/90 hover:border-poke-yellow/70 hover:shadow-xl hover:shadow-poke-yellow/10 transition-all duration-200 cursor-pointer overflow-hidden aspect-[2.5/3.5]">
+            <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="${esc(c.name)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain p-1 group-hover/pocket:scale-105 transition-transform duration-300">
+            <div class="absolute top-2 left-2 z-10"><span class="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-950/85 border border-slate-800 text-slate-300">#${esc(num)}</span></div>
+            <div class="absolute top-2 right-2 z-10">${dupeBadge(c)}</div>
+            <div class="relative z-10 p-1.5 rounded-lg bg-slate-950/90 border border-slate-800/90 backdrop-blur-xs flex items-center justify-between gap-1">
+              <span class="text-xs font-medium text-white truncate">${esc(c.name)}</span>
+              ${rarityBadge(c, 'text-[9px] px-1.5 py-0.2')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
   }).join('')}</div>`;
 }
 

@@ -151,73 +151,72 @@
   </div>
 </main>
 
-<div id="setupModal" role="dialog" aria-modal="true" aria-label="Google Sheets setup and instructions" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm p-4">
-  <div class="max-w-4xl w-full mx-auto my-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+<div id="setupModal" role="dialog" aria-modal="true" aria-label="How this sheet works" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm p-4">
+  <div class="max-w-2xl w-full mx-auto my-6 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
     <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0"><i data-lucide="sheet" class="w-4 h-4"></i></div>
-        <div><h2 class="font-display text-base sm:text-lg font-bold text-white">How this sheet works</h2><p class="text-xs text-slate-400 mt-0.5">How your spreadsheet drives this personal vault</p></div>
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0"><i data-lucide="sheet" class="w-4 h-4"></i></div>
+        <div><h2 class="font-display text-base font-bold text-white">How This Sheet Works</h2><p class="text-[11px] text-slate-400">Google Sheets format &amp; mapping reference</p></div>
       </div>
-      <button data-action="close-modal" data-id="setupModal" aria-label="Close" class="text-slate-400 hover:text-white p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <button data-action="close-modal" data-id="setupModal" aria-label="Close" class="text-slate-400 hover:text-white p-1 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
-    <div class="p-4 sm:p-6">
-      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
-    <div class="flex items-start gap-3">
-      <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0"><i data-lucide="sheet" class="w-5 h-5"></i></div>
-      <div><h2 class="font-display text-base sm:text-lg font-bold text-white">Google Sheets Setup &amp; How Sync Works</h2>
-        <p class="text-xs sm:text-sm text-slate-400 mt-1">Your Google Sheet is the source of truth for the collection. The app reads it; changes made in the app are not written back to the spreadsheet.</p></div>
-    </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-2">
-        <h3 class="text-sm font-semibold text-emerald-300">1. The Sets tab (library index)</h3>
-        <p class="text-xs text-slate-400">Keep a tab named <strong class="text-slate-200">Sets</strong>. Each row describes one expansion. Column A must contain the exact name of that expansion's card tab; the app uses that value as the tab name.</p>
-        <ul class="text-xs text-slate-300 space-y-1.5">
-          <li><strong>A</strong> — Code / card-tab name (required)</li><li><strong>B</strong> — Set name</li><li><strong>C</strong> — Release date (YYYY-MM-DD)</li><li><strong>D</strong> — Cover card number</li><li><strong>E</strong> — Language (EN or JP)</li><li><strong>F</strong> — Number owned; only rows with a value above 0 appear in the library</li><li><strong>G</strong> — Total card count</li><li><strong>H</strong> — Completion percentage</li><li><strong>I–K</strong> — Optional art code, image base URL, and Scrydex ID override</li>
-        </ul>
+
+    <div class="p-4 sm:p-5 space-y-4 text-xs">
+      <!-- 2-Column Cheat Sheet Layout -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Sets Tab Cheat Sheet -->
+        <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3.5 space-y-2">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+            <span class="font-bold text-emerald-300 flex items-center gap-1.5"><i data-lucide="layers" class="w-3.5 h-3.5"></i> Tab: Sets</span>
+            <span class="text-[10px] text-slate-500 font-mono">Index</span>
+          </div>
+          <ul class="space-y-1 text-slate-300 font-mono text-[11px]">
+            <li><span class="text-emerald-400 font-bold">Col A</span>: Tab Name / Code</li>
+            <li><span class="text-emerald-400 font-bold">Col B</span>: Set Name</li>
+            <li><span class="text-emerald-400 font-bold">Col C</span>: Release Date (YYYY-MM-DD)</li>
+            <li><span class="text-emerald-400 font-bold">Col D</span>: Cover Card #</li>
+            <li><span class="text-emerald-400 font-bold">Col E</span>: Language (EN / JP)</li>
+            <li><span class="text-emerald-400 font-bold">Col F</span>: Owned Count (&gt;0 to show)</li>
+            <li><span class="text-emerald-400 font-bold">Col G</span>: Total Cards</li>
+            <li><span class="text-emerald-400 font-bold">Col H</span>: Completion %</li>
+          </ul>
+        </div>
+
+        <!-- Individual Card Tab Cheat Sheet -->
+        <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3.5 space-y-2">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
+            <span class="font-bold text-emerald-300 flex items-center gap-1.5"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i> Card Tabs</span>
+            <span class="text-[10px] text-slate-500 font-mono">Per Expansion</span>
+          </div>
+          <ul class="space-y-1 text-slate-300 font-mono text-[11px]">
+            <li><span class="text-emerald-400 font-bold">Col A</span>: Card Number</li>
+            <li><span class="text-emerald-400 font-bold">Col B</span>: Card Name</li>
+            <li><span class="text-emerald-400 font-bold">Col C</span>: Pokémon Type</li>
+            <li><span class="text-emerald-400 font-bold">Col E</span>: Rarity</li>
+            <li><span class="text-emerald-400 font-bold">Col F</span>: Status (<span class="text-amber-300">1</span>, <span class="text-amber-300">own</span>, <span class="text-amber-300">yes</span>)</li>
+            <li><span class="text-emerald-400 font-bold">Col G</span>: Duplicates Count</li>
+            <li><span class="text-emerald-400 font-bold">Col I</span>: Card Notes</li>
+            <li><span class="text-emerald-400 font-bold">Col J</span>: Wanted Priority / Image URL</li>
+          </ul>
+        </div>
       </div>
-      <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-2">
-        <h3 class="text-sm font-semibold text-emerald-300">2. Each set's card tab</h3>
-        <p class="text-xs text-slate-400">Create one separate tab for every set. Its tab name must match the value in column A of that set's row on <strong class="text-slate-200">Sets</strong>.</p>
-        <ul class="text-xs text-slate-300 space-y-1.5">
-          <li><strong>A</strong> — Card number</li><li><strong>B</strong> — Card name</li><li><strong>C</strong> — Type</li><li><strong>E</strong> — Rarity</li><li><strong>F</strong> — Ownership status (<strong>Owned</strong> or <strong>Need</strong>)</li><li><strong>G</strong> — Duplicate count</li><li><strong>I</strong> — Notes</li><li><strong>J</strong> — Optional wanted-card priority number, or a plain-text image URL</li>
-        </ul>
-        <p class="text-xs text-slate-400">The app counts a card as owned when column F contains a number of at least 1 or text containing “own” or “yes”; otherwise it is treated as missing. A positive number in column G contributes to the duplicate total.</p>
-      </div>
-    </div>
-    <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-3">
-      <h3 class="text-sm font-semibold text-emerald-300">3. Connect &amp; Live Sync</h3>
-      <p class="text-xs text-slate-400">Ensure link sharing is set to <span class="text-emerald-400 font-medium">"Anyone with the link can view"</span>, then paste your spreadsheet link or ID:</p>
-      <div>
-        <input type="text" id="sheetUrlInput" placeholder="Paste Google Sheet URL or ID..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-400">
-      </div>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" id="autoSyncOnLoadCheckbox" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
-          <span class="text-xs text-slate-300">Auto-sync on page load</span>
-        </label>
-        <button data-action="save-sync" id="fetchSheetBtn" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30 transition">
-          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Save &amp; Sync Now</span>
-        </button>
-      </div>
-    </div>
-    <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-2">
-      <h3 class="text-sm font-semibold text-slate-200">4. What sync does</h3>
-      <ul class="text-xs text-slate-300 space-y-1.5">
-        <li>A sync reads the Sets tab first and refreshes the library index.</li><li>Card tabs are read when needed; the current configuration also preloads visible sets to populate the wanted-card summary.</li><li>Opening a set loads or refreshes that set's card tab. The app caches loaded data locally so it can display it sooner next time.</li><li>To update your collection, edit the Google Sheet itself, then use the sync icon at the top of the app.</li>
-      </ul>
-    </div>
-        <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-2">
-      <h3 class="text-sm font-semibold text-poke-yellow flex items-center gap-2"><i data-lucide="smartphone" class="w-4 h-4"></i> Installing as a Mobile App (PWA)</h3>
-      <p class="text-xs text-slate-300">You can install this vault directly to your phone or tablet home screen for full-screen offline access:</p>
-      <ul class="list-disc list-inside text-xs text-slate-300 space-y-1">
-        <li><strong>Android (Chrome / Edge):</strong> Tap the <strong>"Install App"</strong> button at the top right, or open the browser menu and select <em>"Add to Home screen"</em>.</li>
-        <li><strong>iOS (Safari):</strong> Tap the <strong>Share</strong> button at the bottom of Safari, scroll down, and select <em>"Add to Home Screen"</em>.</li>
-      </ul>
-    </div>
-    <div class="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4">
-      <h3 class="text-sm font-semibold text-amber-300 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i> If something does not load</h3>
-      <p class="text-xs text-slate-300 mt-1">Check that the spreadsheet ID is correct, link sharing allows viewers, the tab is named <strong>Sets</strong>, and every code in Sets column A exactly matches a card-tab name. If the Sets tab cannot be read, the app reports the attempted reads and keeps the existing collection data rather than replacing it with an empty library. If an individual card tab cannot be read, that set shows a load error and can be retried from its set view.</p>
-    </div>
+
+      <!-- Quick Rules & Sync -->
+      <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-slate-200 flex items-center gap-1.5"><i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-poke-yellow"></i> Live Sync Link</span>
+          <label class="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400">
+            <input type="checkbox" id="autoSyncOnLoadCheckbox" checked class="rounded bg-slate-900 border-slate-700 text-emerald-500 focus:ring-0">
+            <span>Auto-sync on load</span>
+          </label>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" id="sheetUrlInput" placeholder="Paste Google Sheet URL or ID..." class="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-400">
+          <button data-action="save-sync" id="fetchSheetBtn" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition flex-shrink-0">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i><span>Sync</span>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 leading-relaxed">Ensure sharing is set to <span class="text-emerald-400 font-medium">"Anyone with the link can view"</span>. Changes made in the spreadsheet will reflect here on sync.</p>
       </div>
     </div>
   </div>

@@ -497,6 +497,31 @@ function getCardImageSources(setOrName, card, large = false) {
   const baseNum = num.replace(/^(\d+)[a-z]$/i, '$1');
   const nums = baseNum === num ? [num] : [num, baseNum];
   const chain = [];
+  // 1. Direct cell URL from card tab (Col J) if present
+  let direct = card.imageUrl || '';
+  if (!direct && set.cards) { 
+    const same = set.cards.filter(c => cardKey(c.number) === cardKey(card.number)); 
+    const hit = same.find(c => c.name === card.name) || same[0]; 
+    if (hit) direct = hit.imageUrl || ''; 
+  }
+  if (direct) { 
+    const safeDirect = normalizeImageUrl(direct); 
+    if (safeDirect) chain.push(safeDirect); 
+  }
+
+  // 2. Local folder check: img/[lang]/[code]/[num].jpg
+  const langSub = (set.isJapanese || set.lang === 'JP') ? 'jp' : 'en';
+  const folderCode = String(set.code || set.tab || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (folderCode && num) {
+    // Generates: img/jp/neo2pf/1.jpg, img/jp/neo2pf/1.png, and padded 001 equivalents
+    chain.push(`img/${langSub}/${folderCode}/${num}.jpg`);
+    chain.push(`img/${langSub}/${folderCode}/${num}.png`);
+    chain.push(`img/${langSub}/${folderCode}/${p3(num)}.jpg`);
+    chain.push(`img/${langSub}/${folderCode}/${p3(num)}.png`);
+  }
+
+  // 3. Custom ImageBase folder from Col J of the Sets tab (if defined)
+  nums.forEach(n => chain.push(...imageBaseUrls(set.imageBase, n, p3(n))));
 
   let direct = card.imageUrl || '';
   if (!direct && set.cards) { const same = set.cards.filter(c => cardKey(c.number) === cardKey(card.number)); const hit = same.find(c => c.name === card.name) || same[0]; if (hit) direct = hit.imageUrl || ''; }

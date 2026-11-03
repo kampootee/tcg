@@ -1165,7 +1165,7 @@ function renderCardsBinder(set, cards) {
           if (!owned) {
             // Phantom sleeve: 50% opacity & greyscale artwork preview
             return `<div ${inspectAttrs(set.name, c)} class="group/pocket relative flex flex-col justify-between p-1 sm:p-2 rounded-lg sm:rounded-xl border border-dashed border-slate-800/80 bg-slate-950/40 hover:border-amber-500/50 hover:bg-slate-950/70 transition-all duration-200 cursor-pointer overflow-hidden aspect-[2.5/3.5]">
-              <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="${esc(c.name)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain p-0.5 sm:p-1 opacity-50 grayscale contrast-125 group-hover/pocket:opacity-75 transition-opacity duration-200">
+              <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="${esc(c.name)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain p-0.5 sm:p-1 opacity-25 grayscale contrast-125 group-hover/pocket:opacity-75 transition-opacity duration-200">
               <div class="relative z-10 flex items-center justify-between gap-1 pointer-events-none">
                 <span class="font-mono text-[8px] sm:text-[10px] font-bold px-1 py-0.5 sm:px-1.5 rounded bg-slate-950/90 border border-slate-800/80 text-slate-500 group-hover/pocket:text-amber-300 transition-colors">#${esc(num)}</span>
                 <span class="text-[7px] sm:text-[9px] font-bold uppercase tracking-wider px-1 sm:px-1.5 py-0.5 rounded bg-slate-950/90 border border-amber-500/20 text-amber-400/80 scale-90 sm:scale-100 origin-top-right">Need</span>

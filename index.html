@@ -1048,6 +1048,7 @@ function renderLibraryShelf(container) {
     if (hits.length || loading) html += `<div class="mb-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-800"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-poke-yellow"></i><h3 class="font-display font-bold text-sm text-white">Matching Cards</h3><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${hits.length} Found</span></div><span class="text-xs text-slate-400">${loading ? 'Searching all sets...' : 'Select artwork for a closer look'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5">${hits.slice(0,16).map(({set,card})=>`<button ${inspectAttrs(set.name,card)} class="group/hit text-left flex flex-col p-2 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-poke-yellow/60 transition shadow-sm"><div class="relative w-full aspect-[2.5/3.4] rounded-lg overflow-hidden bg-slate-900 mb-1.5">${imgTag(set,card,'w-full h-full object-contain group-hover/hit:scale-105 transition duration-200')}</div><span class="truncate text-xs font-semibold text-white">${esc(card.name)}</span><span class="text-[11px] text-slate-400 mt-0.5">#${esc(pad(card.number))} · ${esc(set.name)}</span></button>`).join('')}</div></div>`;
   }
   if (!sets.length) { container.innerHTML = html + `<div class="py-14 text-center text-sm text-slate-400 bg-slate-900/60 border border-slate-800 rounded-2xl">No sets match these filters.</div>`; return; }
+  const divider = `<hr class="border-t border-slate-800/80 my-8">`;
   const section = (list, header) => list.length ? header + `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">${list.map(renderSetCard).join('')}</div>` : '';
 
   // Helper to identify promo / special releases
@@ -1060,26 +1061,34 @@ function renderLibraryShelf(container) {
 
   const promos = sets.filter(isPromoSet);
   const mainSets = sets.filter(s => !isPromoSet(s));
+  const sectionsHtml = [];
 
   // 1. English Main Expansions
   const en = mainSets.filter(s => (s.lang || 'EN').toUpperCase() === 'EN');
-  html += section(en, `<div class="mb-3 flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="library" class="w-5 h-5 text-poke-yellow"></i><h2 class="font-display font-bold text-lg text-white">English Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${en.length} Sets</span></div></div>`);
+  if (en.length) {
+    sectionsHtml.push(section(en, `<div class="mb-3 flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="library" class="w-5 h-5 text-poke-yellow"></i><h2 class="font-display font-bold text-lg text-white">English Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${en.length} Sets</span></div></div>`));
+  }
 
   // 2. Japanese Main Expansions
   const jp = mainSets.filter(s => (s.lang || '').toUpperCase() === 'JP');
-  html += section(jp, `<div class="mt-8 mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-red-600/20 text-red-300 border border-red-500/30 text-xs font-bold">🇯🇵 JP</span><h2 class="font-display font-bold text-lg text-white">Japanese Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${jp.length} Sets</span></div>`);
+  if (jp.length) {
+    sectionsHtml.push(section(jp, `<div class="mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-red-600/20 text-red-300 border border-red-500/30 text-xs font-bold">🇯🇵 JP</span><h2 class="font-display font-bold text-lg text-white">Japanese Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${jp.length} Sets</span></div>`));
+  }
 
   // 3. Other Non-Promo Languages (if any)
   [...new Set(mainSets.filter(s => !['EN', 'JP'].includes((s.lang || 'EN').toUpperCase())).map(s => s.lang.toUpperCase()))].forEach(lang => {
     const list = mainSets.filter(s => (s.lang || '').toUpperCase() === lang);
-    html += section(list, `<div class="mt-8 mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-blue-600/20 text-blue-300 border border-blue-500/30 text-xs font-bold">${lang}</span><h2 class="font-display font-bold text-lg text-white">${lang} Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${list.length} Sets</span></div>`);
+    if (list.length) {
+      sectionsHtml.push(section(list, `<div class="mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-blue-600/20 text-blue-300 border border-blue-500/30 text-xs font-bold">${lang}</span><h2 class="font-display font-bold text-lg text-white">${lang} Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${list.length} Sets</span></div>`));
+    }
   });
 
   // 4. Promos & Special Collections
   if (promos.length) {
-    html += section(promos, `<div class="mt-10 mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold">★ SPECIAL</span><h2 class="font-display font-bold text-lg text-white">Promos & Special Releases</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${promos.length} Sets</span></div>`);
+    sectionsHtml.push(section(promos, `<div class="mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold">★ SPECIAL</span><h2 class="font-display font-bold text-lg text-white">Promos & Special Releases</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${promos.length} Sets</span></div>`));
   }
 
+  html += sectionsHtml.join(divider);
   container.innerHTML = html;
 }
 function dataWarning(set) {

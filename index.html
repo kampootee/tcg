@@ -1042,9 +1042,37 @@ function renderLibraryShelf(container) {
   }
   if (!sets.length) { container.innerHTML = html + `<div class="py-14 text-center text-sm text-slate-400 bg-slate-900/60 border border-slate-800 rounded-2xl">No sets match these filters.</div>`; return; }
   const section = (list, header) => list.length ? header + `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">${list.map(renderSetCard).join('')}</div>` : '';
-  const en = sets.filter(s => (s.lang || 'EN').toUpperCase() === 'EN');
+
+  // Helper to identify promo / special releases
+  const isPromoSet = s => {
+    const l = (s.lang || '').toUpperCase();
+    const c = (s.code || '').toUpperCase();
+    const n = (s.name || '').toLowerCase();
+    return l.includes('PROMO') || /^(MCD|PR|PROMO|SVP|SWSHP|SMP|XYP|BWP)/.test(c) || /mcdonald|promo|match battle|trick or trade|premium file/.test(n);
+  };
+
+  const promos = sets.filter(isPromoSet);
+  const mainSets = sets.filter(s => !isPromoSet(s));
+
+  // 1. English Main Expansions
+  const en = mainSets.filter(s => (s.lang || 'EN').toUpperCase() === 'EN');
   html += section(en, `<div class="mb-3 flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="library" class="w-5 h-5 text-poke-yellow"></i><h2 class="font-display font-bold text-lg text-white">English Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${en.length} Sets</span></div></div>`);
-  [...new Set(sets.filter(s => (s.lang || 'EN').toUpperCase() !== 'EN').map(s => s.lang.toUpperCase()))].forEach(lang => { const list=sets.filter(s=>(s.lang||'').toUpperCase()===lang); const flag=lang==='JP'?'🇯🇵 ':''; const label=lang==='JP'?'Japanese Expansions':`${lang} Expansions`; html+=section(list,`<div class="mt-8 mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-red-600/20 text-red-300 border border-red-500/30 text-xs font-bold">${flag}${lang}</span><h2 class="font-display font-bold text-lg text-white">${label}</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${list.length} Sets</span></div>`); });
+
+  // 2. Japanese Main Expansions
+  const jp = mainSets.filter(s => (s.lang || '').toUpperCase() === 'JP');
+  html += section(jp, `<div class="mt-8 mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-red-600/20 text-red-300 border border-red-500/30 text-xs font-bold">🇯🇵 JP</span><h2 class="font-display font-bold text-lg text-white">Japanese Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${jp.length} Sets</span></div>`);
+
+  // 3. Other Non-Promo Languages (if any)
+  [...new Set(mainSets.filter(s => !['EN', 'JP'].includes((s.lang || 'EN').toUpperCase())).map(s => s.lang.toUpperCase()))].forEach(lang => {
+    const list = mainSets.filter(s => (s.lang || '').toUpperCase() === lang);
+    html += section(list, `<div class="mt-8 mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-blue-600/20 text-blue-300 border border-blue-500/30 text-xs font-bold">${lang}</span><h2 class="font-display font-bold text-lg text-white">${lang} Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${list.length} Sets</span></div>`);
+  });
+
+  // 4. Promos & Special Collections
+  if (promos.length) {
+    html += section(promos, `<div class="mt-10 mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold">★ SPECIAL</span><h2 class="font-display font-bold text-lg text-white">Promos & Special Releases</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${promos.length} Sets</span></div>`);
+  }
+
   container.innerHTML = html;
 }
 function dataWarning(set) {

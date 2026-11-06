@@ -586,8 +586,8 @@ function rowsToManifest(rows) {
     if (!r || !r[0] || !r[0].trim()) continue;
     const code = r[0].trim();
     const isJp = /jp/i.test(r[4] || '');
-    // Use the exact code/name from Column A
-    const tabName = code;  
+    // Use the exact tab name from Column A
+    const tabName = code;
     const owned = parseFloat(r[5]) || 0, total = parseFloat(r[6]) || 0;
     let pct = parseFloat(String(r[7] ?? '').replace('%', '').trim());
     if (isNaN(pct) && total > 0) pct = (owned / total) * 100;
@@ -782,9 +782,13 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     const im = head.findIndex(c => /image|img|\burl\b|scan|pic|photo|link/.test(c));
     if (im !== -1) imageIdx = im;
 
-    // Card data begins on the first row where Col A is a number (e.g. "1", "001", "1a")
-    // and Col B has a real name (not "Card Name" or header text)
-    if (/^\d+[a-z]?$/i.test(colA) && colB && !/^(card\s*name|name|card)$/i.test(colB)) {
+const isHeaderName = /^(card\s*name|name|card|title|pokemon|カード名)$/i.test(colB);
+    const isHeaderColA = /^(#|num|no|card|number|id|code|pokedex|dex)$/i.test(colA);
+
+    // Matches standard numbers ("1"), Pokédex codes ("201n", "006"), or alphanumeric promo codes ("PF-1")
+    const isCardId = /^[\d]+[a-z0-9_-]*$/i.test(colA) || /^[a-z0-9#-]+$/i.test(colA);
+
+    if (colB && !isHeaderName && (isCardId || !isHeaderColA)) {
       start = i;
       break;
     }

@@ -1541,15 +1541,24 @@ function scrollSetActionBarIntoView() {
   window.scrollTo({ top: Math.max(0, targetTop), behavior: scrollBehavior() });
 }
 
-async function openSet(set) {
-  // Update URL hash to #CODE (or #CODEJP) without page reload
-  if (window.location.hash.slice(1).toUpperCase() !== (set.code || set.tab).toUpperCase()) {
-    history.pushState(null, '', `#${encodeURIComponent(set.code || set.tab)}`);
+async function openSet(set, initialMode = 'table') {
+  appData.viewMode = initialMode;
+  if (appData.viewMode === 'binder') {
+    appData.filterStatus = 'all';
   }
-  appData.viewMode = 'table';
   appData.binderPage = 0;
+
+  // Build the target hash (e.g. #JPSV9 or #JPSV9/binder)
+  const baseCode = (set.code || set.tab).toUpperCase();
+  const targetHash = initialMode === 'binder' ? `#${baseCode}/binder` : `#${baseCode}`;
+
+  if (window.location.hash.toUpperCase() !== targetHash.toUpperCase()) {
+    history.pushState(null, '', targetHash);
+  }
+
   window.scrollTo({ top: 0, behavior: 'auto' });
   renderApp();
+
   if (!set.isLoaded || set.stale) {
     await loadSetCardsOnDemand(set);
     renderApp();
@@ -1616,11 +1625,20 @@ const ACTIONS = {
   'export-json'() { $('exportDropdown').classList.add('hidden'); exportToJSON(); },
   'clear-search'() { const i = $('searchInput'); i.value = ''; i.focus(); handleSearch(''); },
   filter(el) { appData.filterStatus = el.dataset.filter; renderApp(); },
-  view(el) {
+view(el) {
     appData.viewMode = el.dataset.mode;
     if (appData.viewMode === 'binder') appData.filterStatus = 'all';
+
+    // Update URL hash to reflect the current view mode
+    const set = appData.sets.find(s => s.id === appData.activeSetId);
+    if (set) {
+      const baseCode = (set.code || set.tab).toUpperCase();
+      const targetHash = appData.viewMode === 'binder' ? `#${baseCode}/binder` : `#${baseCode}`;
+      history.replaceState(null, '', targetHash);
+    }
+
     renderApp();
-  },
+  },,
   inspect(el, e) { e.stopPropagation(); showCardInspector(el.dataset.set, el.dataset.num, el.dataset.name); },
   'close-inspector'() { hideCardInspector(); }
 };
@@ -1689,20 +1707,29 @@ async function saveAndSync() {
 }
 
 function checkUrlHash() {
-  const hash = decodeURIComponent(window.location.hash.replace(/^#\/?/, '').trim()).toUpperCase();
-  if (!hash) {
+  const rawHash = decodeURIComponent(window.location.hash.replace(/^#\/?/, '').trim());
+  if (!rawHash) {
     if (appData.activeSetId) ACTIONS.library();
     return;
   }
+
+  // Parses formats like: #JPSV9, #JPSV9/binder, or #JPSV9?view=binder
+  const parts = rawHash.split(/[\/?]/);
+  const targetCode = (parts[0] || '').toUpperCase();
+  const subView = (parts[1] || '').toLowerCase();
+  const wantsBinder = subView === 'binder' || rawHash.toLowerCase().includes('view=binder');
+
   // Find set matching by code, tab, or id
   const target = appData.sets.find(s => 
-    (s.code || '').toUpperCase() === hash || 
-    (s.tab || '').toUpperCase() === hash || 
-    (s.id || '').toUpperCase() === hash
+    (s.code || '').toUpperCase() === targetCode || 
+    (s.tab || '').toUpperCase() === targetCode || 
+    (s.id || '').toUpperCase() === targetCode
   );
+
   if (target && isVisible(target)) {
     appData.activeSetId = target.id;
-    openSet(target);
+    // Open directly in binder mode if requested in URL, otherwise default to table
+    openSet(target, wantsBinder ? 'binder' : 'table');
   }
 }
 

@@ -762,29 +762,22 @@ function cellUrl(raw) {
 
 function parseSheetCsv(tabName, csvText, meta = {}) {
   const rows = Array.isArray(csvText) ? csvText : parseCSVToArray(csvText);
-  if (rows.length < 4) return null;
+  if (!rows.length) return null;
   const width = Math.max(...rows.slice(0, 100).map(r => r.length));
   rows.forEach(r => { while (r.length < width) r.push(''); });
   const sample = rows.slice(0, 10).map(r => r.join(' ')).join(' ').toLowerCase();
   if (/overview|master set progress|master set tracker|cards in set|completion %|total owned/.test(sample) || (sample.includes('total cards') && sample.includes('set name'))) return null;
 
-  // Row 3 (index 2) always contains the headers: Card Number, Card Name, Type, Rarity, etc.
-  const headerRow = rows[2] || [];
-  const head = headerRow.map(c => String(c).trim().toLowerCase());
-  
-  let notesIdx = 8;
-  const n = head.findIndex(c => /note|edition|condition|tag/.test(c)); 
-  if (n !== -1) notesIdx = n;
+  // Cards start directly on Row 1 (index 0)
+  const start = 0;
+  const notesIdx = 8; // Column I (0-indexed: 8)
+  let imageIdx = 9;   // Column J (0-indexed: 9)
 
-  let imageIdx = head.findIndex(c => /image|img|\burl\b|scan|pic|photo|link/.test(c));
-
-  // Data cards strictly begin on Row 4 (index 3)
-  const start = 3;
-
+  // Auto-detect image URL column if present
   const urlCounts = {};
   rows.slice(start, start + 400).forEach(r => r.forEach((c, i) => { if (cellUrl(c)) urlCounts[i] = (urlCounts[i] || 0) + 1; }));
   const urlCols = Object.keys(urlCounts).map(Number).sort((a, b) => urlCounts[b] - urlCounts[a] || b - a);
-  if (!urlCounts[imageIdx]) imageIdx = urlCols.length ? urlCols[0] : (rows[0].length >= 10 ? 9 : -1);
+  if (urlCols.length) imageIdx = urlCols[0];
 
   const cards = [];
   let blankNumbers = 0;
@@ -793,7 +786,7 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     if (!r || r.every(c => !String(c).trim())) continue;
     const a = (r[0] || '').trim().toLowerCase(), b = (r[1] || '').trim().toLowerCase();
     
-    // Skip true summary rows (e.g. "Total" or "Sum"), but do NOT match cards like "Summit"
+    // Skip accidental trailing summary rows
     if (/^(total|sum)$/i.test(a) || /^(total|sum)$/i.test(b)) continue;
 
     const number = (r[0] || '').trim();

@@ -762,26 +762,24 @@ function cellUrl(raw) {
 
 function parseSheetCsv(tabName, csvText, meta = {}) {
   const rows = Array.isArray(csvText) ? csvText : parseCSVToArray(csvText);
-  if (rows.length < 2) return null;
+  if (rows.length < 4) return null;
   const width = Math.max(...rows.slice(0, 100).map(r => r.length));
   rows.forEach(r => { while (r.length < width) r.push(''); });
   const sample = rows.slice(0, 10).map(r => r.join(' ')).join(' ').toLowerCase();
   if (/overview|master set progress|master set tracker|cards in set|completion %|total owned/.test(sample) || (sample.includes('total cards') && sample.includes('set name'))) return null;
 
-  let start = 0, notesIdx = 8, imageIdx = -1;
+  // Row 3 (index 2) always contains the headers: Card Number, Card Name, Type, Rarity, etc.
+  const headerRow = rows[2] || [];
+  const head = headerRow.map(c => String(c).trim().toLowerCase());
+  
+  let notesIdx = 8;
+  const n = head.findIndex(c => /note|edition|condition|tag/.test(c)); 
+  if (n !== -1) notesIdx = n;
 
-  // Scan down rows 0-5 to find the row that actually contains the table headers
-  for (let i = 0; i < Math.min(rows.length, 6); i++) {
-    const head = rows[i].map(c => String(c).trim().toLowerCase());
-    if (head.some(c => /^(#|num|card\s*#|card\s*num|number|name|card\s*name)$/i.test(c) || /#|num|name|rarity|type|poke/.test(c))) {
-      start = i + 1; // Start importing data from the row immediately AFTER this header row
-      const n = head.findIndex(c => /note|edition|condition|tag/.test(c)); 
-      if (n !== -1) notesIdx = n;
-      const im = head.findIndex(c => /image|img|\burl\b|scan|pic|photo|link/.test(c)); 
-      if (im !== -1) imageIdx = im;
-      break;
-    }
-  }
+  let imageIdx = head.findIndex(c => /image|img|\burl\b|scan|pic|photo|link/.test(c));
+
+  // Data cards strictly begin on Row 4 (index 3)
+  const start = 3;
 
   const urlCounts = {};
   rows.slice(start, start + 400).forEach(r => r.forEach((c, i) => { if (cellUrl(c)) urlCounts[i] = (urlCounts[i] || 0) + 1; }));
@@ -795,9 +793,8 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     if (!r || r.every(c => !String(c).trim())) continue;
     const a = (r[0] || '').trim().toLowerCase(), b = (r[1] || '').trim().toLowerCase();
     
-    // Ignore exact summary rows or repeating headers
+    // Skip true summary rows (e.g. "Total" or "Sum"), but do NOT match cards like "Summit"
     if (/^(total|sum)$/i.test(a) || /^(total|sum)$/i.test(b)) continue;
-    if (/^(#|num|card|number)$/i.test(a) && /^(name|card name)$/i.test(b)) continue;
 
     const number = (r[0] || '').trim();
     if (!number && (r[1] || '').trim()) blankNumbers++;

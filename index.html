@@ -768,14 +768,34 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
   const sample = rows.slice(0, 10).map(r => r.join(' ')).join(' ').toLowerCase();
   if (/overview|master set progress|master set tracker|cards in set|completion %|total owned/.test(sample) || (sample.includes('total cards') && sample.includes('set name'))) return null;
 
-  // Cards start directly on Row 1 (index 0)
-  const start = 0;
-  const notesIdx = 8; // Column I (0-indexed: 8)
-  let imageIdx = 9;   // Column J (0-indexed: 9)
+  // Auto-detect where card data actually begins (scans the first 8 rows)
+  let start = 0;
+  let notesIdx = 8;
+  let imageIdx = 9;
+
+  for (let i = 0; i < Math.min(rows.length, 8); i++) {
+    const colA = String(rows[i][0] || '').trim();
+    const colB = String(rows[i][1] || '').trim();
+    const head = rows[i].map(c => String(c).trim().toLowerCase());
+
+    // If this row is a header row, note any custom column mappings
+    if (head.some(c => /note|edition|condition|tag/.test(c))) {
+      notesIdx = head.findIndex(c => /note|edition|condition|tag/.test(c));
+    }
+    const im = head.findIndex(c => /image|img|\burl\b|scan|pic|photo|link/.test(c));
+    if (im !== -1) imageIdx = im;
+
+    // Card data begins on the first row where Col A is a number (e.g. "1", "001", "1a")
+    // and Col B has a real name (not "Card Name" or header text)
+    if (/^\d+[a-z]?$/i.test(colA) && colB && !/^(card\s*name|name|card)$/i.test(colB)) {
+      start = i;
+      break;
+    }
+  }
 
   // Auto-detect image URL column if present
   const urlCounts = {};
-  rows.slice(start, start + 400).forEach(r => r.forEach((c, i) => { if (cellUrl(c)) urlCounts[i] = (urlCounts[i] || 0) + 1; }));
+  rows.slice(start, start + 400).forEach(r => r.forEach((c, idx) => { if (cellUrl(c)) urlCounts[idx] = (urlCounts[idx] || 0) + 1; }));
   const urlCols = Object.keys(urlCounts).map(Number).sort((a, b) => urlCounts[b] - urlCounts[a] || b - a);
   if (urlCols.length) imageIdx = urlCols[0];
 
@@ -786,8 +806,9 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     if (!r || r.every(c => !String(c).trim())) continue;
     const a = (r[0] || '').trim().toLowerCase(), b = (r[1] || '').trim().toLowerCase();
     
-    // Skip accidental trailing summary rows
+    // Skip exact summary words ("total", "sum") or repeating headers, but keep cards like "Summit"
     if (/^(total|sum)$/i.test(a) || /^(total|sum)$/i.test(b)) continue;
+    if (/^(#|num|card|number)$/i.test(a) && /^(name|card name)$/i.test(b)) continue;
 
     const number = (r[0] || '').trim();
     if (!number && (r[1] || '').trim()) blankNumbers++;
@@ -806,19 +827,6 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     });
   }
   return cards.length ? { cards, blankNumbers } : null;
-}
-
-function parseCSVToArray(text, delim = ',') {
-  const rows = []; let row = [], val = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i], nx = text[i + 1];
-    if (ch === '"') { if (q && nx === '"') { val += '"'; i++; } else q = !q; }
-    else if (ch === delim && !q) { row.push(val); val = ''; }
-    else if ((ch === '\r' || ch === '\n') && !q) { if (ch === '\r' && nx === '\n') i++; row.push(val); rows.push(row); row = []; val = ''; }
-    else val += ch;
-  }
-  if (val || row.length) { row.push(val); rows.push(row); }
-  return rows;
 }
 
 /* ==========================================================

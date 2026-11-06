@@ -786,7 +786,7 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     const r = rows[i];
     if (!r || r.every(c => !String(c).trim())) continue;
     const a = (r[0] || '').trim().toLowerCase(), b = (r[1] || '').trim().toLowerCase();
-    if (/total|sum/.test(a) || /total|sum/.test(b)) continue;
+    if (/^(total|sum)$/i.test(a) || /^(total|sum)$/i.test(b)) continue;
     const number = (r[0] || '').trim();
     if (!number && (r[1] || '').trim()) blankNumbers++;
     const name = (r[1] || '').trim() || (number ? `Card #${number}` : 'Unknown card');

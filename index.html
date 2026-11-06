@@ -826,6 +826,34 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
   return cards.length ? { cards, blankNumbers } : null;
 }
 
+function parseCSVToArray(text, delim = ',') {
+  const rows = [];
+  let row = [], val = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], nx = text[i + 1];
+    if (ch === '"') {
+      if (q && nx === '"') { val += '"'; i++; }
+      else q = !q;
+    } else if (ch === delim && !q) {
+      row.push(val);
+      val = '';
+    } else if ((ch === '\r' || ch === '\n') && !q) {
+      if (ch === '\r' && nx === '\n') i++;
+      row.push(val);
+      rows.push(row);
+      row = [];
+      val = '';
+    } else {
+      val += ch;
+    }
+  }
+  if (val || row.length) {
+    row.push(val);
+    rows.push(row);
+  }
+  return rows;
+}
+
 /* ==========================================================
    SHARED RENDER HELPERS
    ========================================================== */

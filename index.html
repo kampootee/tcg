@@ -878,37 +878,6 @@ function parseCSVToArray(text, delim = ',') {
   }
   return rows;
 }
-  
-  // <-- End of parseSheetCsv
-
-// Ensure parseCSVToArray starts OUTSIDE parseSheetCsv:
-function parseCSVToArray(text, delim = ',') {
-  const rows = [];
-  let row = [], val = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i], nx = text[i + 1];
-    if (ch === '"') {
-      if (q && nx === '"') { val += '"'; i++; }
-      else q = !q;
-    } else if (ch === delim && !q) {
-      row.push(val);
-      val = '';
-    } else if ((ch === '\r' || ch === '\n') && !q) {
-      if (ch === '\r' && nx === '\n') i++;
-      row.push(val);
-      rows.push(row);
-      row = [];
-      val = '';
-    } else {
-      val += ch;
-    }
-  }
-  if (val || row.length) {
-    row.push(val);
-    rows.push(row);
-  }
-  return rows;
-}
 
 /* ==========================================================
    SHARED RENDER HELPERS
@@ -1362,9 +1331,22 @@ function hideNote() {
   setTimeout(() => tip.classList.contains('opacity-0') && tip.classList.add('hidden'), 150);
 }
 
+// Finds a set by name even if the name has stray whitespace/case/punctuation differences;
+// falls back to the set currently open, so the inspector always has a real set object.
+function resolveSet(name) {
+  const exact = setByName.get(name);
+  if (exact) return exact;
+  const key = cleanKey(name), sets = appData.sets || [];
+  if (key) {
+    const hit = sets.find(x => cleanKey(x.name) === key) || sets.find(x => cleanKey(x.code) === key || cleanKey(x.tab) === key);
+    if (hit) return hit;
+  }
+  return sets.find(x => x.id === appData.activeSetId) || {};
+}
+
 let lastFocus = null;
 function showCardInspector(setName, num, name) {
-  const set = setByName.get(setName) || {};
+  const set = resolveSet(setName);
   const detailCard0 = (set.cards || []).find(c => cardKey(c.number) === cardKey(num) && c.name === name) || (set.cards || []).find(c => cardKey(c.number) === cardKey(num)) || { number: num, name };
   const chain = [...new Set(getCardImageSources(set, detailCard0))];
   const box = $('globalCardInspector'), bd = $('cardInspectorBackdrop'), img = $('inspectorCardImg'), loading = $('inspectorLoading');

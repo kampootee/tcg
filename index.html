@@ -822,10 +822,11 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
       status: own ? 'own' : 'need', duplicates: vG > 0 ? Math.floor(vG) : 0, notes, imageUrl, want,
       _q: `${name} ${number} ${notes}`.toLowerCase()
     });
-  }
+  } // <-- End of for loop
   return cards.length ? { cards, blankNumbers } : null;
-}
+} // <-- End of parseSheetCsv
 
+// Ensure parseCSVToArray starts OUTSIDE parseSheetCsv:
 function parseCSVToArray(text, delim = ',') {
   const rows = [];
   let row = [], val = '', q = false;

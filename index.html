@@ -586,11 +586,8 @@ function rowsToManifest(rows) {
     if (!r || !r[0] || !r[0].trim()) continue;
     const code = r[0].trim();
     const isJp = /jp/i.test(r[4] || '');
-    // If another row in the Sets tab already uses this exact code for an English set, target [Code]JP
-    const hasCollision = isJp && rows.some(otherRow => 
-      otherRow && (otherRow[0] || '').trim().toLowerCase() === code.toLowerCase() && !/jp/i.test(otherRow[4] || '')
-    );
-    const tabName = hasCollision && !/jp$/i.test(code) ? `${code}JP` : code;
+    // Target [Code]JP for Japanese sets if the code doesn't already end in JP
+    const tabName = isJp && !/jp$/i.test(code) ? `${code}JP` : code;
     const owned = parseFloat(r[5]) || 0, total = parseFloat(r[6]) || 0;
     let pct = parseFloat(String(r[7] ?? '').replace('%', '').trim());
     if (isNaN(pct) && total > 0) pct = (owned / total) * 100;

@@ -488,46 +488,44 @@ const scrydexId = set => {
   return base ? (set.isJapanese ? `${base}_ja` : base) : '';
 };
 
-function getCardImageSources(setOrName, card, large = false) {
-  const set = typeof setOrName === 'object' ? setOrName : setByName.get(setOrName);
-  if (!set || !card) return [];
+function getCardImageSources(set, card) {
+  const isJp = set.lang === 'JP' || /^jp/i.test(set.code);
+
+  // 1. Determine Scrydex Set Slug
+  let scrydexSlug = (set.scrydexId || '').trim();
+
+  if (!scrydexSlug) {
+    if (isJp) {
+      // Strips leading "JP" or trailing "JP", converts to lowercase, and appends "_ja"
+      // Example: "JPSV9" -> "sv9_ja", "GYM1JP" -> "gym1_ja", "JPNEO1" -> "neo1_ja"
+      const cleanCode = set.code.replace(/^jp/i, '').replace(/jp$/i, '').toLowerCase();
+      scrydexSlug = `${cleanCode}_ja`;
+    } else {
+      scrydexSlug = set.code.toLowerCase();
+    }
+  }
+
+  // 2. Card numbering extraction
   const rawNum = String(card.number).split('/')[0].trim();
   const num = rawNum.replace(/^0+(?=\d)/, '');
   const p3 = n => /^\d+$/.test(n) ? n.padStart(3, '0') : n;
-  const baseNum = num.replace(/^(\d+)[a-z]$/i, '$1');
-  const nums = baseNum === num ? [num] : [num, baseNum];
+  const baseNum = num.replace(/^(\d+)[a-z_-]*$/i, '$1');
+  const nums = Array.from(new Set([num, baseNum, p3(baseNum)]));
+
   const chain = [];
- 
-  let direct = card.imageUrl || '';
-  if (!direct && set.cards) { const same = set.cards.filter(c => cardKey(c.number) === cardKey(card.number)); const hit = same.find(c => c.name === card.name) || same[0]; if (hit) direct = hit.imageUrl || ''; }
-  if (direct) { const safeDirect = normalizeImageUrl(direct); if (safeDirect) chain.push(safeDirect); }
 
-  nums.forEach(n => chain.push(...imageBaseUrls(set.imageBase, n, p3(n))));
+  // Column J custom image override (always first priority)
+  if (card.imageUrl) chain.push(card.imageUrl);
 
-  if (!num) return [...new Set(chain)];
-  const code = artKey(set), sid = scrydexId(set);
-  const tcgdex = set.images && (set.images[cardKey(num)] || set.images[cardKey(baseNum)]);
-  const scry = () => sid ? nums.map(n => `${SCRYDEX}/${sid}-${n}/${large ? 'large' : 'medium'}`) : [];
-
-  if (set.isJapanese) {
-    if (code && /^\d+$/.test(baseNum) && (set.artCode || /^(SV|M|S|SM|XY|BW)\d/i.test(code))) {
-      const bPad = `${LIMITLESS_JP}/${code}/${code}_${p3(baseNum)}_R_JP_`, bRaw = `${LIMITLESS_JP}/${code}/${code}_${baseNum}_R_JP_`;
-      chain.push(...(large ? [`${bRaw}LG.png`, `${bRaw}SM.png`, `${bPad}LG.png`, `${bPad}SM.png`] : [`${bRaw}SM.png`, `${bPad}SM.png`, `${bRaw}LG.png`]));
-    }
-    chain.push(...scry());
-    if (tcgdex) chain.push(`${tcgdex}/high.webp`, `${tcgdex}/high.png`, `${tcgdex}/low.webp`);
-    return [...new Set(chain)];
+  // 3. Add Scrydex CDN Candidates
+  for (const n of nums) {
+    // Generates: https://images.scrydex.com/pokemon/sv9_ja-1/large
+    chain.push(`https://images.scrydex.com/pokemon/${scrydexSlug}-${n}/large`);
+    chain.push(`https://images.scrydex.com/pokemon/${scrydexSlug}-${p3(n)}/large`);
   }
 
-  if (set.artCode && /^\d+$/.test(baseNum)) {
-    const c = set.artCode.toUpperCase();
-    chain.push(`${LIMITLESS_EN}/${c}/${c}_${p3(baseNum)}_R_EN_LG.png`, `${LIMITLESS_EN}/${c}/${c}_${p3(baseNum)}_R_EN_SM.png`);
-  }
-  chain.push(...scry());
-  const ptcg = set.ptcg || (set.code ? ptcgCode(String(set.code).toLowerCase()) : '');
-  if (ptcg) nums.forEach(n => chain.push(`https://images.pokemontcg.io/${ptcg}/${n}.png`));
-  if (tcgdex) chain.push(`${tcgdex}/high.webp`, `${tcgdex}/high.png`);
-  return [...new Set(chain)];
+  // 4. (Optional) Limitless / TCGdex / Pokemon.com fallback chains...
+  return chain;
 }
 
 const rarityRank = r => {
@@ -585,9 +583,8 @@ function rowsToManifest(rows) {
     const r = rows[i];
     if (!r || !r[0] || !r[0].trim()) continue;
     const code = r[0].trim();
-    const isJp = /jp/i.test(r[4] || '');
-    // Use the exact tab name from Column A
-    const tabName = code;
+    const isJp = /jp/i.test(r[4] || '') || /^jp/i.test(code);
+    const tabName = code; // 1:1 match to sheet tab
     const owned = parseFloat(r[5]) || 0, total = parseFloat(r[6]) || 0;
     let pct = parseFloat(String(r[7] ?? '').replace('%', '').trim());
     if (isNaN(pct) && total > 0) pct = (owned / total) * 100;

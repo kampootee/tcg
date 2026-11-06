@@ -769,12 +769,20 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
   if (/overview|master set progress|master set tracker|cards in set|completion %|total owned/.test(sample) || (sample.includes('total cards') && sample.includes('set name'))) return null;
 
   let start = 0, notesIdx = 8, imageIdx = -1;
-  const head = rows[0].map(c => String(c).trim().toLowerCase());
-  if (head.some(c => /#|num|name|rarity|type|poke/.test(c))) {
-    start = 1;
-    const n = head.findIndex(c => /note|edition|condition|tag/.test(c)); if (n !== -1) notesIdx = n;
-    const im = head.findIndex(c => /image|img|\burl\b|scan|pic|photo|link/.test(c)); if (im !== -1) imageIdx = im;
+
+  // Scan down rows 0-5 to find the row that actually contains the table headers
+  for (let i = 0; i < Math.min(rows.length, 6); i++) {
+    const head = rows[i].map(c => String(c).trim().toLowerCase());
+    if (head.some(c => /^(#|num|card\s*#|card\s*num|number|name|card\s*name)$/i.test(c) || /#|num|name|rarity|type|poke/.test(c))) {
+      start = i + 1; // Start importing data from the row immediately AFTER this header row
+      const n = head.findIndex(c => /note|edition|condition|tag/.test(c)); 
+      if (n !== -1) notesIdx = n;
+      const im = head.findIndex(c => /image|img|\burl\b|scan|pic|photo|link/.test(c)); 
+      if (im !== -1) imageIdx = im;
+      break;
+    }
   }
+
   const urlCounts = {};
   rows.slice(start, start + 400).forEach(r => r.forEach((c, i) => { if (cellUrl(c)) urlCounts[i] = (urlCounts[i] || 0) + 1; }));
   const urlCols = Object.keys(urlCounts).map(Number).sort((a, b) => urlCounts[b] - urlCounts[a] || b - a);
@@ -786,13 +794,17 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     const r = rows[i];
     if (!r || r.every(c => !String(c).trim())) continue;
     const a = (r[0] || '').trim().toLowerCase(), b = (r[1] || '').trim().toLowerCase();
+    
+    // Ignore exact summary rows or repeating headers
     if (/^(total|sum)$/i.test(a) || /^(total|sum)$/i.test(b)) continue;
+    if (/^(#|num|card|number)$/i.test(a) && /^(name|card name)$/i.test(b)) continue;
+
     const number = (r[0] || '').trim();
     if (!number && (r[1] || '').trim()) blankNumbers++;
     const name = (r[1] || '').trim() || (number ? `Card #${number}` : 'Unknown card');
     const rawOwned = (r[5] ?? '').trim();
     const vF = parseFloat(rawOwned), vG = parseFloat((r[6] ?? '').trim());
-    const own = !isNaN(vF) ? vF >= 1 : /own|yes/i.test(rawOwned);
+    const own = !isNaN(vF) ? vF >= 1 : /^(own|owned|yes|y|true|x)$/i.test(rawOwned);
     const notes = (r[notesIdx] ?? '').trim();
     const imageUrl = (imageIdx !== -1 && cellUrl(r[imageIdx])) || r.slice(9).map(cellUrl).find(Boolean) || '';
     const wantRaw = String(r[9] ?? '').trim();

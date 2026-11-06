@@ -489,24 +489,30 @@ const scrydexId = set => {
 };
 
 function getCardImageSources(set, card) {
-  const isJp = set.lang === 'JP' || /^jp/i.test(set.code);
+  // If set is undefined, recover it from state
+  const activeSet = set || (typeof state !== 'undefined' && state.manifest && (
+    state.manifest.find(s => s.code === (card && card.setCode)) ||
+    state.manifest.find(s => s.code === state.currentSet) ||
+    state.manifest.find(s => s.code === state.activeSet)
+  )) || {};
+
+  const setCode = activeSet.code || activeSet.tab || activeSet.id || (typeof state !== 'undefined' && (state.currentSet || state.activeSet)) || '';
+  const isJp = activeSet.lang === 'JP' || /^jp/i.test(setCode);
 
   // 1. Determine Scrydex Set Slug
-  let scrydexSlug = (set.scrydexId || '').trim();
+  let scrydexSlug = (activeSet.scrydexId || '').trim();
 
-  if (!scrydexSlug) {
+  if (!scrydexSlug && setCode) {
     if (isJp) {
-      // Strips leading "JP" or trailing "JP", converts to lowercase, and appends "_ja"
-      // Example: "JPSV9" -> "sv9_ja", "GYM1JP" -> "gym1_ja", "JPNEO1" -> "neo1_ja"
-      const cleanCode = set.code.replace(/^jp/i, '').replace(/jp$/i, '').toLowerCase();
+      const cleanCode = setCode.replace(/^jp/i, '').replace(/jp$/i, '').toLowerCase();
       scrydexSlug = `${cleanCode}_ja`;
     } else {
-      scrydexSlug = set.code.toLowerCase();
+      scrydexSlug = setCode.toLowerCase();
     }
   }
 
   // 2. Card numbering extraction
-  const rawNum = String(card.number).split('/')[0].trim();
+  const rawNum = String(card && (card.number || card.num || '')).split('/')[0].trim();
   const num = rawNum.replace(/^0+(?=\d)/, '');
   const p3 = n => /^\d+$/.test(n) ? n.padStart(3, '0') : n;
   const baseNum = num.replace(/^(\d+)[a-z_-]*$/i, '$1');
@@ -515,16 +521,16 @@ function getCardImageSources(set, card) {
   const chain = [];
 
   // Column J custom image override (always first priority)
-  if (card.imageUrl) chain.push(card.imageUrl);
+  if (card && card.imageUrl) chain.push(card.imageUrl);
 
   // 3. Add Scrydex CDN Candidates
-  for (const n of nums) {
-    // Generates: https://images.scrydex.com/pokemon/sv9_ja-1/large
-    chain.push(`https://images.scrydex.com/pokemon/${scrydexSlug}-${n}/large`);
-    chain.push(`https://images.scrydex.com/pokemon/${scrydexSlug}-${p3(n)}/large`);
+  if (scrydexSlug) {
+    for (const n of nums) {
+      chain.push(`https://images.scrydex.com/pokemon/${scrydexSlug}-${n}/large`);
+      chain.push(`https://images.scrydex.com/pokemon/${scrydexSlug}-${p3(n)}/large`);
+    }
   }
 
-  // 4. (Optional) Limitless / TCGdex / Pokemon.com fallback chains...
   return chain;
 }
 

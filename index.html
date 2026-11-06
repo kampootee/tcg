@@ -1465,6 +1465,10 @@ function scrollSetActionBarIntoView() {
 }
 
 async function openSet(set) {
+  // Update URL hash to #CODE (or #CODEJP) without page reload
+  if (window.location.hash.slice(1).toUpperCase() !== (set.code || set.tab).toUpperCase()) {
+    history.pushState(null, '', `#${encodeURIComponent(set.code || set.tab)}`);
+  }
   appData.viewMode = 'table';
   appData.binderPage = 0;
   window.scrollTo({ top: 0, behavior: 'auto' });
@@ -1474,10 +1478,23 @@ async function openSet(set) {
     renderApp();
     if (appData.activeSetId === set.id) window.scrollTo({ top: 0, behavior: 'auto' });
   }
-}
+}}
 
 const ACTIONS = {
-  library() { const returningFromSet = appData.activeSetId; hideCardInspector(); appData.viewMode = 'table'; appData.filterStatus = 'all'; appData.activeSetId = null; appData.libraryPage = 'sets'; renderApp(); scrollLibraryToSet(returningFromSet || returnToSetId); returnToSetId = null; },
+  library() { 
+    const returningFromSet = appData.activeSetId; 
+    hideCardInspector(); 
+    appData.viewMode = 'table'; 
+    appData.filterStatus = 'all'; 
+    appData.activeSetId = null; 
+    appData.libraryPage = 'sets'; 
+    if (window.location.hash) {
+      history.pushState(null, '', window.location.pathname + window.location.search);
+    }
+    renderApp(); 
+    scrollLibraryToSet(returningFromSet || returnToSetId); 
+    returnToSetId = null; 
+  },
   'open-set'(el) { returnToSetId = el.dataset.id; appData.filterStatus = 'all'; appData.activeSetId = el.dataset.id; const s = appData.sets.find(x => x.id === el.dataset.id); if (s) openSet(s); },
   'retry-set'() { const s = appData.sets.find(x => x.id === appData.activeSetId); if (s) { s.loadFailed = false; openSet(s); } },
   sync() { syncLiveSheet(); },
@@ -1593,6 +1610,29 @@ async function saveAndSync() {
   if (await syncLiveSheet()) { closeModal('sheetModal'); closeModal('setupModal'); }
 }
 
+function checkUrlHash() {
+  const hash = decodeURIComponent(window.location.hash.replace(/^#\/?/, '').trim()).toUpperCase();
+  if (!hash) {
+    if (appData.activeSetId) ACTIONS.library();
+    return;
+  }
+  // Find set matching by code, tab, or id
+  const target = appData.sets.find(s => 
+    (s.code || '').toUpperCase() === hash || 
+    (s.tab || '').toUpperCase() === hash || 
+    (s.id || '').toUpperCase() === hash
+  );
+  if (target && isVisible(target)) {
+    appData.activeSetId = target.id;
+    openSet(target);
+  }
+}
+
+// Handle browser back and forward button clicks
+window.addEventListener('popstate', () => {
+  checkUrlHash();
+});
+  
 /* ==========================================================
    INITIALIZATION
    ========================================================== */
@@ -1666,8 +1706,15 @@ window.addEventListener('DOMContentLoaded', () => {
 
   firstLoad = !cached && !!c.sheetId && c.autoSync !== false;
   renderApp();
-  if (cached) scheduleEnrich();
-  if (c.sheetId && c.autoSync !== false) syncLiveSheet({ background: cached });
+  if (cached) {
+    scheduleEnrich();
+    checkUrlHash(); // Checks hash from cached data immediately
+  }
+  if (c.sheetId && c.autoSync !== false) {
+    syncLiveSheet({ background: cached }).then(() => {
+      checkUrlHash(); // Checks hash again after live sheet finishes syncing
+    });
+  }
 });
 </script>
 </body>

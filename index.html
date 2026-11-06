@@ -20,6 +20,8 @@
 <script>
   var PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 350"><rect width="250" height="350" rx="14" fill="#0f172a" stroke="#334155" stroke-width="4"/><circle cx="125" cy="175" r="38" fill="none" stroke="#475569" stroke-width="6"/><path d="M87 175h76" stroke="#475569" stroke-width="6"/><circle cx="125" cy="175" r="12" fill="#0f172a" stroke="#475569" stroke-width="6"/></svg>');
   // Walks the full list of candidate URLs (data-srcs, "|" separated) before giving up on the placeholder.
+  window.imgOk = window.imgOk || {};
+  window.rememberImg = function (img) { if (img.dataset.first && img.src && img.src.indexOf('data:') !== 0) window.imgOk[img.dataset.first] = img.src; };
   window.handleImgFallback = function (img) {
     var list = (img.dataset.srcs || '').split('|').filter(Boolean);
     var step = Number(img.dataset.step || 0);
@@ -489,15 +491,9 @@ const scrydexId = set => {
 };
 
 function getCardImageSources(set, card) {
-  // If set is undefined, recover it from state
-  const activeSet = set || (typeof state !== 'undefined' && state.manifest && (
-    state.manifest.find(s => s.code === (card && card.setCode)) ||
-    state.manifest.find(s => s.code === state.currentSet) ||
-    state.manifest.find(s => s.code === state.activeSet)
-  )) || {};
-
-  const setCode = activeSet.code || activeSet.tab || activeSet.id || (typeof state !== 'undefined' && (state.currentSet || state.activeSet)) || '';
-  const isJp = activeSet.lang === 'JP' || /^jp/i.test(setCode);
+  const activeSet = set || {};
+  const setCode = activeSet.code || activeSet.tab || '';
+  const isJp = activeSet.lang === 'JP' || activeSet.isJapanese || /^jp/i.test(setCode);
 
   // 1. Determine Scrydex Set Slug
   let scrydexSlug = (activeSet.scrydexId || '').trim();
@@ -531,7 +527,7 @@ function getCardImageSources(set, card) {
     }
   }
 
-  return chain;
+  return [...new Set(chain)];
 }
 
 const rarityRank = r => {
@@ -563,7 +559,8 @@ function getSetCoverImageSources(set) {
 
 const imgSrcAttrs = srcs => {
   const list = (srcs && srcs.length ? srcs : [PLACEHOLDER]).map(u => String(u).replace(/\|/g, '%7C'));
-  return `src="${esc(list[0])}" data-first="${esc(list[0])}" data-srcs="${esc(list.slice(1).join('|'))}" referrerpolicy="no-referrer" onerror="handleImgFallback(this)"`;
+  const known = window.imgOk[list[0]];
+  return `src="${esc(known || list[0])}" data-first="${esc(list[0])}" data-srcs="${esc(known ? '' : list.slice(1).join('|'))}" referrerpolicy="no-referrer" onload="rememberImg(this)" onerror="handleImgFallback(this)"`;
 };
 const imgTag = (set, card, cls) => `<img ${imgSrcAttrs(getCardImageSources(set, card))} alt="${esc(card.name)}" loading="lazy" decoding="async" class="${cls}">`;
 
@@ -636,8 +633,17 @@ async function fetchSetsManifest(sheetId) {
 }
 
 async function fetchApiRows(sheetId, tabName) {
-  const j = JSON.parse(await fetchText(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}?valueRenderOption=FORMATTED_VALUE&key=${encodeURIComponent(CONFIG.apiKey)}`));
+  const j = JSON.parse(await fetchText(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent("'" + String(tabName).replace(/'/g, "''") + "'")}?valueRenderOption=FORMATTED_VALUE&key=${encodeURIComponent(CONFIG.apiKey)}`));
   return (j.values || []).map(r => r.map(c => String(c ?? '')));
+}
+
+let manifestCodeSet = new Set();
+// True when Google handed back the Sets tab (or another non-card tab) instead of the requested one
+function looksLikeSetsTab(rows) {
+  const colA = rows.map(r => cleanKey(r[0])).filter(Boolean);
+  const codes = manifestCodeSet.size ? manifestCodeSet : new Set((appData.sets || []).map(x => cleanKey(x.code)));
+  if (colA.length < 3 || !codes.size) return false;
+  return colA.filter(v => codes.has(v)).length / colA.length > 0.5;
 }
 
 async function fetchTab(sheetId, tabName, meta = {}) {
@@ -645,11 +651,22 @@ async function fetchTab(sheetId, tabName, meta = {}) {
     let rows;
     if (CONFIG.apiKey) {
       try { rows = await fetchApiRows(sheetId, tabName); } catch (e) { console.warn('Sheets API read failed, using CSV feed:', e.message); }
+      if (rows && looksLikeSetsTab(rows)) rows = null;
     }
     if (!rows) {
-      const csv = await fetchText(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}&t=${Date.now()}`);
-      if (!csv || csv.length < 20) return null;
-      rows = parseCSVToArray(csv);
+      // gviz is case/space sensitive and silently falls back to the first tab (Sets) when the name doesn't match
+      const names = [...new Set([tabName, String(tabName).trim(), String(tabName).toLowerCase(), String(tabName).toUpperCase(), `${tabName} `])];
+      for (const nm of names) {
+        let csv;
+        try { csv = await fetchText(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(nm)}&t=${Date.now()}`); }
+        catch (e) { continue; }
+        if (!csv || csv.length < 20 || /^\s*</.test(csv)) continue;
+        const parsed = parseCSVToArray(csv);
+        if (looksLikeSetsTab(parsed)) { console.warn(`Tab "${nm}" returned the Sets tab (name not matched by Google)`); continue; }
+        if (nm !== tabName) console.warn(`[tab fallback] "${tabName}" only matched as ${JSON.stringify(nm)} (codes: ${[...String(tabName)].map(c => c.charCodeAt(0)).join(',')})`);
+        rows = parsed; break;
+      }
+      if (!rows) return null;
     }
     const set = parseSheetCsv(tabName, rows, meta);
     return set && set.cards.length ? set : null;
@@ -669,6 +686,7 @@ async function syncLiveSheet({ background = false } = {}) {
   try {
     const manifest = await fetchSetsManifest(sheetId);
     if (!manifest) throw new Error(`Could not read the "${CONFIG.setsTabName}" tab.\n\n${manifestProblems.join('\n')}\n\nSheet ID: ${sheetId}\nIf the tab has a different name, set CONFIG.setsTabName, or paste its gid into CONFIG.setsGid.`);
+    manifestCodeSet = new Set(manifest.map(m => cleanKey(m.code)));
     const prev = new Map(appData.sets.map(x => [x.id, x]));
     const fresh = manifest.map((m, idx) => {
       const isJp = m.lang === 'JP' || /\[jp\]|^jp[\s\-_]/i.test(m.name) || /\[jp\]|^jp[\s\-_]/i.test(m.code);
@@ -1017,8 +1035,18 @@ function renderToolbar() {
   $('topFilters').innerHTML = FILTERS.map(([k, l]) => `<button data-action="filter" data-filter="${k}" class="px-3 py-1.5 rounded-lg font-medium transition ${appData.filterStatus === k ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'}">${l}</button>`).join('');
 }
 
+const _innerHTMLDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+function skipIdenticalRenders(el) {
+  if (!el || el.__dedupe) return;
+  el.__dedupe = true;
+  Object.defineProperty(el, 'innerHTML', {
+    get() { return _innerHTMLDesc.get.call(this); },
+    set(v) { if (v === this.__lastHtml) return; this.__lastHtml = v; _innerHTMLDesc.set.call(this, v); }
+  });
+}
 function renderMainContent() {
   const container = $('setsContainer'), back = $('navBackToLibraryBtn');
+  skipIdenticalRenders(container);
   const searchWasFocused = document.activeElement && document.activeElement.id === 'searchInput';
   const search = $('searchInputHome');
   if (search) { $('searchInputAnchor').appendChild(search); search.classList.add('hidden'); }
@@ -1337,7 +1365,8 @@ function hideNote() {
 let lastFocus = null;
 function showCardInspector(setName, num, name) {
   const set = setByName.get(setName) || {};
-  const chain = [...getCardImageSources(setName, { number: num, name }, true)];
+  const detailCard0 = (set.cards || []).find(c => cardKey(c.number) === cardKey(num) && c.name === name) || (set.cards || []).find(c => cardKey(c.number) === cardKey(num)) || { number: num, name };
+  const chain = [...new Set(getCardImageSources(set, detailCard0))];
   const box = $('globalCardInspector'), bd = $('cardInspectorBackdrop'), img = $('inspectorCardImg'), loading = $('inspectorLoading');
   lastFocus = document.activeElement;
   $('inspectorCardName').textContent = name; $('inspectorCardNum').textContent = `#${pad(num)}`; $('inspectorSetName').textContent = setName;

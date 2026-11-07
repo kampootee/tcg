@@ -1598,6 +1598,14 @@ const ACTIONS = {
     scrollLibraryToSet(returningFromSet || returnToSetId); 
     returnToSetId = null; 
   },
+  'quick-wanted'() {
+  appData.activeSetId = null;
+  appData.libraryPage = 'sets';
+  appData.libraryFilter = 'wanted';
+  renderApp();
+  const task = preloadOwnedSets();
+  if (task) task.then(() => renderApp());
+},
   'open-set'(el) { returnToSetId = el.dataset.id; appData.filterStatus = 'all'; appData.activeSetId = el.dataset.id; const s = appData.sets.find(x => x.id === el.dataset.id); if (s) openSet(s); },
   'retry-set'() { const s = appData.sets.find(x => x.id === appData.activeSetId); if (s) { s.loadFailed = false; openSet(s); } },
   sync() { syncLiveSheet(); },

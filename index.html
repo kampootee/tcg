@@ -1046,8 +1046,9 @@ function renderMainContent() {
   const empty = !appData.sets.length, loadingFirst = empty && firstLoad;
   $('noSetsFallback').classList.toggle('hidden', !empty || loadingFirst);
   if (empty) { container.innerHTML = loadingFirst ? `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4" role="status" aria-label="Loading your collection">${'<div class="rounded-2xl bg-slate-900 border border-slate-800/80 aspect-[2.5/3.6] animate-pulse"></div>'.repeat(6)}</div>` : ''; back.classList.add('hidden'); back.classList.remove('inline-flex'); return; }
-  const active = !!appData.activeSetId;
-  back.classList.toggle('hidden', !active); back.classList.toggle('inline-flex', active);
+  const isSpecialView = !!appData.activeSetId || appData.libraryFilter === 'wanted';
+  back.classList.toggle('hidden', !isSpecialView); 
+  back.classList.toggle('inline-flex', isSpecialView);
   if (active) renderActiveSetView(container); else renderLibraryShelf(container);
   mountSearchInput(active);
   if (searchWasFocused) { const input = $('searchInput'); input?.focus(); if (input && typeof input.setSelectionRange === 'function') input.setSelectionRange(input.value.length, input.value.length); }
@@ -1125,14 +1126,55 @@ function renderLibraryShelf(container) {
       </label>
     </div>
   </div>`;
-  if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
+if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
     const wantedCards = [];
     const visibleSets = appData.sets.filter(isVisible);
     visibleSets.forEach(set => (set.cards || []).forEach(card => {
       if (Number(card.want) > 0 && (!q || card._q.includes(q) || set.name.toLowerCase().includes(q))) wantedCards.push({ set, card });
     }));
-    const wantedHtml = wantedCards.length ? `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">${wantedCards.map(({set,card}) => `<article class="rounded-xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-amber-500/50 transition"><button ${inspectAttrs(set.name,card)} class="block w-full p-2 text-left"><div class="aspect-[2.5/3.4] rounded-lg overflow-hidden bg-slate-950 mb-2">${imgTag(set,card,'w-full h-full object-contain')}</div><div class="text-xs font-semibold text-white truncate" title="${esc(card.name)}">${esc(card.name)}</div><div class="text-[11px] text-slate-400 mt-0.5">#${esc(pad(card.number))}</div></button><div class="px-2 pb-2 flex items-center justify-between gap-1"><span class="text-[10px] text-amber-300 truncate" title="${esc(set.name)}">${esc(set.name)}</span><button data-action="open-set" data-id="${esc(set.id)}" class="text-[10px] text-poke-yellow hover:underline flex-shrink-0">Open set</button></div></article>`).join('')}</div>` : `<div class="py-12 text-center rounded-2xl bg-slate-900/70 border border-slate-800"><i data-lucide="star" class="w-9 h-9 text-amber-400 mx-auto mb-2"></i><p class="text-sm font-semibold text-white">${preloading?'Loading wanted cards…':'No wanted cards found'}</p><p class="text-xs text-slate-400 mt-1">${preloading?'Checking your visible sets in the background.':'Mark cards as wanted in your collection to add them here.'}</p></div>`;
-    container.innerHTML = controls + `<div class="mb-3"><h3 class="font-display font-bold text-lg text-white">Wanted cards</h3><p class="text-xs text-slate-400">${wantedCards.length} cards currently marked as wanted${preloading?' · loading remaining sets':''}</p></div>` + wantedHtml;
+
+    const wantedHtml = wantedCards.length 
+      ? `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          ${wantedCards.map(({set,card}) => `<article class="rounded-xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-amber-500/50 transition">
+            <button ${inspectAttrs(set.name,card)} class="block w-full p-2 text-left">
+              <div class="aspect-[2.5/3.4] rounded-lg overflow-hidden bg-slate-950 mb-2">${imgTag(set,card,'w-full h-full object-contain')}</div>
+              <div class="text-xs font-semibold text-white truncate" title="${esc(card.name)}">${esc(card.name)}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">#${esc(pad(card.number))}</div>
+            </button>
+            <div class="px-2 pb-2 flex items-center justify-between gap-1">
+              <span class="text-[10px] text-amber-300 truncate" title="${esc(set.name)}">${esc(set.name)}</span>
+              <button data-action="open-set" data-id="${esc(set.id)}" class="text-[10px] text-poke-yellow hover:underline flex-shrink-0">Open set</button>
+            </div>
+          </article>`).join('')}
+        </div>`
+      : `<div class="py-12 text-center rounded-2xl bg-slate-900/70 border border-slate-800">
+          <i data-lucide="star" class="w-9 h-9 text-amber-400 mx-auto mb-2"></i>
+          <p class="text-sm font-semibold text-white">${preloading ? 'Loading hunt list…' : 'No wanted cards found'}</p>
+          <p class="text-xs text-slate-400 mt-1">${preloading ? 'Checking your visible sets in the background.' : 'Mark cards with a priority in Column J to add them here.'}</p>
+        </div>`;
+
+    // Added breadcrumb & return header
+    const huntHeader = `
+      <div class="mb-4 flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <button data-action="library" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-poke-yellow border border-slate-700 transition flex-shrink-0" title="Return to All Sets">
+            <i data-lucide="arrow-left" class="w-4 h-4 text-poke-yellow"></i>
+          </button>
+          <div class="min-w-0">
+            <h3 class="font-display font-bold text-base sm:text-lg text-white flex items-center gap-2 truncate">
+              <span>Hunt List</span>
+              <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">${wantedCards.length}</span>
+            </h3>
+            <p class="text-[11px] sm:text-xs text-slate-400 truncate">${wantedCards.length} cards marked as wanted${preloading ? ' · syncing remaining sets...' : ''}</p>
+          </div>
+        </div>
+        <button data-action="library" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition flex-shrink-0">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-poke-yellow"></i>
+          <span class="hidden sm:inline">All Sets</span>
+        </button>
+      </div>`;
+
+    container.innerHTML = controls + huntHeader + wantedHtml;
     return;
   }
   let html = controls;
@@ -1604,14 +1646,21 @@ const ACTIONS = {
     scrollLibraryToSet(returningFromSet || returnToSetId); 
     returnToSetId = null; 
   },
-  'quick-wanted'() {
-  appData.activeSetId = null;
-  appData.libraryPage = 'sets';
-  appData.libraryFilter = 'wanted';
-  renderApp();
-  const task = preloadOwnedSets();
-  if (task) task.then(() => renderApp());
-},
+  library() { 
+    const returningFromSet = appData.activeSetId; 
+    hideCardInspector(); 
+    appData.viewMode = 'table'; 
+    appData.filterStatus = 'all'; 
+    appData.activeSetId = null; 
+    appData.libraryPage = 'sets'; 
+    appData.libraryFilter = 'all'; // <-- Resets back to full collection view
+    if (window.location.hash) {
+      history.pushState(null, '', window.location.pathname + window.location.search);
+    }
+    renderApp(); 
+    scrollLibraryToSet(returningFromSet || returnToSetId); 
+    returnToSetId = null; 
+  },
   'open-set'(el) { returnToSetId = el.dataset.id; appData.filterStatus = 'all'; appData.activeSetId = el.dataset.id; const s = appData.sets.find(x => x.id === el.dataset.id); if (s) openSet(s); },
   'retry-set'() { const s = appData.sets.find(x => x.id === appData.activeSetId); if (s) { s.loadFailed = false; openSet(s); } },
   sync() { syncLiveSheet(); },
@@ -1740,17 +1789,30 @@ async function saveAndSync() {
 function checkUrlHash() {
   const rawHash = decodeURIComponent(window.location.hash.replace(/^#\/?/, '').trim());
   if (!rawHash) {
-    if (appData.activeSetId) ACTIONS.library();
+    if (appData.activeSetId || appData.libraryFilter === 'wanted') ACTIONS.library();
     return;
   }
 
-  // Parses formats like: #JPSV9, #JPSV9/binder, or #JPSV9?view=binder
+  // 1. Direct deep-link to Hunt List: #hunt or #wanted
+  const cleanHash = rawHash.toLowerCase();
+  if (cleanHash === 'hunt' || cleanHash === 'wanted') {
+    appData.activeSetId = null;
+    appData.libraryPage = 'sets';
+    appData.libraryFilter = 'wanted';
+    renderApp();
+    const task = preloadOwnedSets();
+    if (task) task.then(() => {
+      if (!appData.activeSetId && appData.libraryFilter === 'wanted') renderApp();
+    });
+    return;
+  }
+
+  // 2. Existing set & binder hash logic
   const parts = rawHash.split(/[\/?]/);
   const targetCode = (parts[0] || '').toUpperCase();
   const subView = (parts[1] || '').toLowerCase();
   const wantsBinder = subView === 'binder' || rawHash.toLowerCase().includes('view=binder');
 
-  // Find set matching by code, tab, or id
   const target = appData.sets.find(s => 
     (s.code || '').toUpperCase() === targetCode || 
     (s.tab || '').toUpperCase() === targetCode || 
@@ -1759,7 +1821,6 @@ function checkUrlHash() {
 
   if (target && isVisible(target)) {
     appData.activeSetId = target.id;
-    // Open directly in binder mode if requested in URL, otherwise default to table
     openSet(target, wantsBinder ? 'binder' : 'table');
   }
 }

@@ -192,6 +192,7 @@
             <li><span class="text-emerald-400 font-bold">Col F</span>: Owned Count (&gt;0 to show)</li>
             <li><span class="text-emerald-400 font-bold">Col G</span>: Total Cards</li>
             <li><span class="text-emerald-400 font-bold">Col H</span>: Completion %</li>
+            <li><span class="text-emerald-400 font-bold">Col M</span>: Base Set Size (e.g. 88)</li>
           </ul>
         </div>
 
@@ -607,16 +608,13 @@ function rowsToManifest(rows) {
     const owned = parseFloat(r[5]) || 0, total = parseFloat(r[6]) || 0;
     let pct = parseFloat(String(r[7] ?? '').replace('%', '').trim());
     if (isNaN(pct) && total > 0) pct = (owned / total) * 100;
-
-    // Read Col M (index 12): Base set size override (e.g. 88)
     const baseTotal = parseFloat(r[12]) || 0;
-
     manifest.push({
       code, tab: tabName, name: (r[1] || '').trim() || code,
       releaseDate: (r[2] || '').trim(), coverCard: (r[3] || '').trim(),
       lang: isJp ? 'JP' : 'EN',
       manifestOwned: owned, manifestTotal: total, manifestPct: isNaN(pct) ? 0 : Math.round(pct),
-      manifestBase: baseTotal, // <-- Stored here
+      manifestBase: baseTotal,
       artCode: (r[8] || '').trim(), imageBase: (r[9] || '').trim(), scrydexId: (r[10] || '').trim()
     });
   }
@@ -922,7 +920,7 @@ function formatReleaseDate(raw) {
   return s;
 }
 
-  function parseCardNum(raw) {
+function parseCardNum(raw) {
   const s = String(raw || '').split('/')[0].trim();
   const m = s.match(/\d+/);
   return m ? parseInt(m[0], 10) : 0;
@@ -953,7 +951,7 @@ function getSetStats(set) {
       pct 
     };
   }
-// Fallback before cards are loaded on-demand
+
   const ownedTotal = Number(set.manifestOwned) || 0;
   const ownedBase = baseTotal > 0 ? Math.min(ownedTotal, baseTotal) : ownedTotal;
   const pct = baseTotal ? Math.min(100, Math.round(ownedBase / baseTotal * 100)) : 0;
@@ -968,6 +966,7 @@ function getSetStats(set) {
     pct 
   };
 }
+
 const rarityStyle = r => {
   r = (r || '').toLowerCase();
   if (r.includes('holo')) return 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/30';
@@ -1145,19 +1144,12 @@ function renderSetCard(set) {
       <div class="group-hover/set:text-poke-yellow transition min-h-[2.5rem]" title="${esc(set.name)}">${formatSplitTitle(set.name)}</div>
       <div class="flex items-center justify-between text-xs text-slate-200 font-semibold mt-2">
         <span>${st.owned} / ${st.total} owned</span>
-        <span class="font-bold ${complete ? 'text-emerald-300' : 'text-poke-yellow'}">${st.pct}%</span>
+        <div class="flex items-center gap-1.5 flex-shrink-0">
+          <span class="font-bold ${complete ? 'text-emerald-300' : 'text-poke-yellow'}">${st.pct}%</span>
+          ${st.secrets > 0 ? `<span class="text-slate-600 font-mono">·</span><span class="text-[11px] font-bold text-amber-300 inline-flex items-center gap-0.5" title="${st.secrets} secret rares"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i><span>${st.secrets}</span></span>` : ''}
+        </div>
       </div>
-      <div class="w-full bg-slate-700/90 h-2 rounded-full mt-2 overflow-hidden">
-        <div class="${complete ? 'bg-emerald-400' : 'bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400'} h-full rounded-full transition-all duration-500" style="width:${st.pct}%"></div>
-      </div>
-      ${st.secrets > 0 ? `
-      <div class="flex items-center justify-between mt-2 pt-1 border-t border-slate-800/80">
-        <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Secrets</span>
-        <span class="text-xs font-bold text-amber-300 inline-flex items-center gap-1">
-          <span>${st.secrets}</span>
-          <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
-        </span>
-      </div>` : ''}
+      <div class="w-full bg-slate-700/90 h-2 rounded-full mt-2 overflow-hidden"><div class="${complete ? 'bg-emerald-400' : 'bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400'} h-full rounded-full transition-all duration-500" style="width:${st.pct}%"></div></div>
     </div></div>`;
 }
 function renderLibraryShelf(container) {

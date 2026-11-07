@@ -936,7 +936,7 @@ const statusBadge = (c, sz = 'text-xs px-2.5 py-1') => {
   const need = c.status === 'need';
   return `<span class="${sz} rounded-lg font-semibold inline-flex items-center gap-1.5 ${need ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'}"><i data-lucide="${need ? 'circle-dashed' : 'check'}" class="w-3 h-3"></i><span>${need ? 'Need' : 'Owned'}</span></span>`;
 };
-const dupeBadge = (c, label = '') => c.duplicates > 0 ? `<span class="px-2 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono text-[10px] sm:text-xs font-bold">x${c.duplicates}${label}</span>` : '';
+const dupeBadge = (c) => c.duplicates > 0 ? `<span class="px-1.5 py-0.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[10px] sm:text-xs font-bold">Dupe</span>` : '';
 
 function formatSplitTitle(full) {
   if (!full) return '';

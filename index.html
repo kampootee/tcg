@@ -1673,9 +1673,12 @@ function scrollLibraryToSet(setId) {
     const tile = document.querySelector(`[data-action="open-set"][data-id="${CSS.escape(setId)}"]`);
     if (!tile) return;
     const header = document.querySelector('body > header');
-    const offset = header ? header.getBoundingClientRect().height : 0;
-    const top = tile.getBoundingClientRect().top + window.scrollY - offset - 8;
-    window.scrollTo({ top: Math.max(0, top), behavior: scrollBehavior() });
+    const headerHeight = header ? header.getBoundingClientRect().height : 0;
+    const tileRect = tile.getBoundingClientRect();
+    const availableHeight = window.innerHeight - headerHeight;
+    // Centers the tile in the visible area between the header and bottom of the screen
+    const targetTop = tileRect.top + window.scrollY - headerHeight - Math.max(0, (availableHeight - tileRect.height) / 2);
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: scrollBehavior() });
   });
 }
 

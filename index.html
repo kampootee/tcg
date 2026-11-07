@@ -607,11 +607,16 @@ function rowsToManifest(rows) {
     const owned = parseFloat(r[5]) || 0, total = parseFloat(r[6]) || 0;
     let pct = parseFloat(String(r[7] ?? '').replace('%', '').trim());
     if (isNaN(pct) && total > 0) pct = (owned / total) * 100;
+
+    // Read Col M (index 12): Base set size override (e.g. 88)
+    const baseTotal = parseFloat(r[12]) || 0;
+
     manifest.push({
       code, tab: tabName, name: (r[1] || '').trim() || code,
       releaseDate: (r[2] || '').trim(), coverCard: (r[3] || '').trim(),
       lang: isJp ? 'JP' : 'EN',
       manifestOwned: owned, manifestTotal: total, manifestPct: isNaN(pct) ? 0 : Math.round(pct),
+      manifestBase: baseTotal, // <-- Stored here
       artCode: (r[8] || '').trim(), imageBase: (r[9] || '').trim(), scrydexId: (r[10] || '').trim()
     });
   }
@@ -715,6 +720,7 @@ async function syncLiveSheet({ background = false } = {}) {
         year: (m.releaseDate.match(/\b(19\d\d|20\d\d)\b/) || [])[1] || (old && old.year) || null,
         coverCard: m.coverCard, artCode: m.artCode, imageBase: m.imageBase, scrydexId: m.scrydexId,
         manifestOwned: m.manifestOwned, manifestTotal: m.manifestTotal, manifestPct: m.manifestPct,
+        manifestBase: m.manifestBase,
         cards: hasCards ? old.cards : [],
         isLoaded: hasCards, stale: hasCards,
         dexId: old?.dexId, ptcg: old?.ptcg, logo: old?.logo, images: old?.images, enriched: !!(old && old.enriched)
@@ -916,17 +922,52 @@ function formatReleaseDate(raw) {
   return s;
 }
 
-function getSetStats(set) {
-  const cards = set.cards || [];
-  if (cards.length) {
-    const owned = cards.filter(isOwned).length;
-    return { total: cards.length, owned, needed: cards.length - owned, dupes: cards.reduce((s, c) => s + (Number(c.duplicates) || 0), 0), pct: Math.round(owned / cards.length * 100) };
-  }
-  const total = Number(set.manifestTotal) || 0, owned = Number(set.manifestOwned) || 0;
-  const pct = set.manifestPct !== undefined ? Number(set.manifestPct) : (total ? Math.round(owned / total * 100) : 0);
-  return { total, owned, needed: Math.max(0, total - owned), dupes: 0, pct };
+  function parseCardNum(raw) {
+  const s = String(raw || '').split('/')[0].trim();
+  const m = s.match(/\d+/);
+  return m ? parseInt(m[0], 10) : 0;
 }
 
+function getSetStats(set) {
+  const cards = set.cards || [];
+  const manifestTotal = Number(set.manifestTotal) || 0;
+  const manifestBase = Number(set.manifestBase) || 0;
+  const baseTotal = manifestBase > 0 ? manifestBase : (manifestTotal || cards.length || 0);
+
+  if (cards.length) {
+    const isSecret = c => baseTotal > 0 && parseCardNum(c.number) > baseTotal;
+    const baseCards = cards.filter(c => !isSecret(c));
+    const secretCards = cards.filter(c => isSecret(c));
+    const ownedBase = baseCards.filter(isOwned).length;
+    const ownedSecrets = secretCards.filter(isOwned).length;
+    const totalBase = baseCards.length || baseTotal;
+    const pct = totalBase ? Math.min(100, Math.round(ownedBase / totalBase * 100)) : 0;
+
+    return { 
+      total: totalBase, 
+      owned: ownedBase, 
+      needed: Math.max(0, totalBase - ownedBase), 
+      secrets: ownedSecrets,
+      totalSecrets: secretCards.length,
+      dupes: cards.reduce((s, c) => s + (Number(c.duplicates) || 0), 0), 
+      pct 
+    };
+  }
+// Fallback before cards are loaded on-demand
+  const ownedTotal = Number(set.manifestOwned) || 0;
+  const ownedBase = baseTotal > 0 ? Math.min(ownedTotal, baseTotal) : ownedTotal;
+  const pct = baseTotal ? Math.min(100, Math.round(ownedBase / baseTotal * 100)) : 0;
+
+  return { 
+    total: baseTotal, 
+    owned: ownedBase, 
+    needed: Math.max(0, baseTotal - ownedBase), 
+    secrets: 0, 
+    totalSecrets: 0,
+    dupes: 0, 
+    pct 
+  };
+}
 const rarityStyle = r => {
   r = (r || '').toLowerCase();
   if (r.includes('holo')) return 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/30';
@@ -1102,8 +1143,21 @@ function renderSetCard(set) {
     <div class="absolute top-2.5 left-2.5 z-10"><span class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-bold bg-slate-950/90 text-slate-100 border border-slate-600/80 shadow-sm">${esc(formatReleaseDate(set.releaseDate) || set.year || '')}</span></div>
     <div class="relative z-10 p-3.5 bg-slate-950/90 border-t border-slate-700/60 flex flex-col justify-end">
       <div class="group-hover/set:text-poke-yellow transition min-h-[2.5rem]" title="${esc(set.name)}">${formatSplitTitle(set.name)}</div>
-      <div class="flex items-center justify-between text-xs text-slate-200 font-semibold mt-2"><span>${st.owned} / ${st.total} owned</span><span class="font-bold ${complete ? 'text-emerald-300' : 'text-poke-yellow'}">${st.pct}%</span></div>
-      <div class="w-full bg-slate-700/90 h-2 rounded-full mt-2 overflow-hidden"><div class="${complete ? 'bg-emerald-400' : 'bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400'} h-full rounded-full transition-all duration-500" style="width:${st.pct}%"></div></div>
+      <div class="flex items-center justify-between text-xs text-slate-200 font-semibold mt-2">
+        <span>${st.owned} / ${st.total} owned</span>
+        <span class="font-bold ${complete ? 'text-emerald-300' : 'text-poke-yellow'}">${st.pct}%</span>
+      </div>
+      <div class="w-full bg-slate-700/90 h-2 rounded-full mt-2 overflow-hidden">
+        <div class="${complete ? 'bg-emerald-400' : 'bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400'} h-full rounded-full transition-all duration-500" style="width:${st.pct}%"></div>
+      </div>
+      ${st.secrets > 0 ? `
+      <div class="flex items-center justify-between mt-2 pt-1 border-t border-slate-800/80">
+        <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Secrets</span>
+        <span class="text-xs font-bold text-amber-300 inline-flex items-center gap-1">
+          <span>${st.secrets}</span>
+          <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400 fill-amber-400"></i>
+        </span>
+      </div>` : ''}
     </div></div>`;
 }
 function renderLibraryShelf(container) {

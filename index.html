@@ -980,16 +980,40 @@ function renderStats() {
   }
   const rows = appData.sets.filter(isVisible).map(s => ({ s, st: getSetStats(s) }));
   const owned = rows.reduce((n, r) => n + r.st.owned, 0);
-  const total = rows.reduce((n, r) => n + r.st.total, 0);
-  const pct = !total ? 0 : owned >= total ? 100 : Math.min(99, Math.round(owned / total * 100));
   const done = rows.filter(r => r.st.total > 0 && r.st.owned >= r.st.total).length;
+  const totalSets = rows.length;
+
   $('statsSection').innerHTML =
-    statTile('emerald', 'check-circle', 'Cards owned', `<span class="font-display text-xl font-bold text-white leading-none">${owned}</span><span class="text-xs text-slate-400">/ ${total}</span>`) +
-    `<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5 flex items-center gap-2.5 shadow-sm">
-      <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 flex-shrink-0"><i data-lucide="trophy" class="w-4 h-4"></i></div>
-      <div class="flex-1 min-w-0"><div class="flex justify-between items-center leading-tight"><span class="text-[10px] uppercase font-semibold tracking-wider text-slate-300">Collection</span><span class="text-xs font-bold text-purple-300">${pct}%</span></div>
-      <div class="w-full bg-slate-800 h-2 rounded-full mt-1.5 overflow-hidden"><div class="bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400 h-full rounded-full transition-all duration-500" style="width:${pct}%"></div></div>
-      <div class="text-[11px] text-slate-400 mt-1 truncate">${done} of ${rows.length} sets complete</div></div></div>`;
+    // 1. Prominent Unique Cards Tile
+    `<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-center gap-3 shadow-sm">
+      <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+        <i data-lucide="sparkles" class="w-5 h-5 text-emerald-400"></i>
+      </div>
+      <div class="min-w-0">
+        <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block leading-tight">Unique Cards Owned</span>
+        <div class="flex items-baseline gap-1.5 mt-0.5">
+          <span class="font-display text-2xl sm:text-3xl font-extrabold text-white leading-none tracking-tight">${owned.toLocaleString()}</span>
+          <span class="text-[11px] font-medium text-emerald-400">in vault</span>
+        </div>
+      </div>
+    </div>` +
+
+    // 2. Completed Sets / Expansion Milestones Tile (Replaces the low % bar)
+    `<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-center gap-3 shadow-sm">
+      <div class="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 flex-shrink-0">
+        <i data-lucide="trophy" class="w-5 h-5 text-purple-400"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between leading-tight">
+          <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Sets Completed</span>
+          <span class="text-xs font-bold text-purple-300 font-mono">${done} / ${totalSets}</span>
+        </div>
+        <div class="flex items-baseline gap-1.5 mt-0.5">
+          <span class="font-display text-2xl sm:text-3xl font-extrabold text-white leading-none tracking-tight">${done}</span>
+          <span class="text-[11px] text-slate-400 truncate">master sets finished (${totalSets} active)</span>
+        </div>
+      </div>
+    </div>`;
 }
 const FILTERS = [['all', 'All'], ['need', 'Need'], ['own', 'Owned'], ['dupe', 'Duplicates']];
 function renderToolbar() {

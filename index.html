@@ -833,8 +833,8 @@ const isHeaderName = /^(card\s*name|name|card|title|pokemon|カード名)$/i.tes
     const own = !isNaN(vF) ? vF >= 1 : /^(own|owned|yes|y|true|x)$/i.test(rawOwned);
     const notes = (r[notesIdx] ?? '').trim();
     const imageUrl = (imageIdx !== -1 && cellUrl(r[imageIdx])) || r.slice(9).map(cellUrl).find(Boolean) || '';
-    const wantRaw = String(r[9] ?? '').trim();
-    const want = cellUrl(wantRaw) ? 0 : (parseFloat(wantRaw) > 0 ? parseFloat(wantRaw) : (/^(y|yes|x|true)$/i.test(wantRaw) ? 1 : 0));
+    const wantRaw = String(r[7] ?? '').trim(); // Col H: Wanted (1 = wanted)
+const want = !cellUrl(wantRaw) && (parseFloat(wantRaw) >= 1 || /^(1|y|yes|x|true)$/i.test(wantRaw)) ? 1 : 0;
     cards.push({
       number, name, type: (r[2] || '').trim(), rarity: (r[4] || r[3] || 'Common').trim(),
       status: own ? 'own' : 'need', duplicates: vG > 0 ? Math.floor(vG) : 0, notes, imageUrl, want,

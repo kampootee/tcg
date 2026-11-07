@@ -1046,7 +1046,8 @@ function renderMainContent() {
   const empty = !appData.sets.length, loadingFirst = empty && firstLoad;
   $('noSetsFallback').classList.toggle('hidden', !empty || loadingFirst);
   if (empty) { container.innerHTML = loadingFirst ? `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4" role="status" aria-label="Loading your collection">${'<div class="rounded-2xl bg-slate-900 border border-slate-800/80 aspect-[2.5/3.6] animate-pulse"></div>'.repeat(6)}</div>` : ''; back.classList.add('hidden'); back.classList.remove('inline-flex'); return; }
-  const isSpecialView = !!appData.activeSetId || appData.libraryFilter === 'wanted';
+  const active = !!appData.activeSetId;
+  const isSpecialView = active || appData.libraryFilter === 'wanted';
   back.classList.toggle('hidden', !isSpecialView); 
   back.classList.toggle('inline-flex', isSpecialView);
   if (active) renderActiveSetView(container); else renderLibraryShelf(container);
@@ -1639,6 +1640,7 @@ const ACTIONS = {
     appData.filterStatus = 'all'; 
     appData.activeSetId = null; 
     appData.libraryPage = 'sets'; 
+    appData.libraryFilter = 'all'; 
     if (window.location.hash) {
       history.pushState(null, '', window.location.pathname + window.location.search);
     }
@@ -1646,20 +1648,18 @@ const ACTIONS = {
     scrollLibraryToSet(returningFromSet || returnToSetId); 
     returnToSetId = null; 
   },
-  library() { 
-    const returningFromSet = appData.activeSetId; 
-    hideCardInspector(); 
-    appData.viewMode = 'table'; 
-    appData.filterStatus = 'all'; 
-    appData.activeSetId = null; 
-    appData.libraryPage = 'sets'; 
-    appData.libraryFilter = 'all'; // <-- Resets back to full collection view
-    if (window.location.hash) {
-      history.pushState(null, '', window.location.pathname + window.location.search);
+  'quick-wanted'() {
+    appData.activeSetId = null;
+    appData.libraryPage = 'sets';
+    appData.libraryFilter = 'wanted';
+    if (window.location.hash.toLowerCase() !== '#hunt') {
+      history.pushState(null, '', '#hunt');
     }
-    renderApp(); 
-    scrollLibraryToSet(returningFromSet || returnToSetId); 
-    returnToSetId = null; 
+    renderApp();
+    const task = preloadOwnedSets();
+    if (task) task.then(() => {
+      if (!appData.activeSetId && appData.libraryFilter === 'wanted') renderApp();
+    });
   },
   'open-set'(el) { returnToSetId = el.dataset.id; appData.filterStatus = 'all'; appData.activeSetId = el.dataset.id; const s = appData.sets.find(x => x.id === el.dataset.id); if (s) openSet(s); },
   'retry-set'() { const s = appData.sets.find(x => x.id === appData.activeSetId); if (s) { s.loadFailed = false; openSet(s); } },
@@ -1693,7 +1693,19 @@ const ACTIONS = {
   },
   'copy-missing'() { copyMissingCards(); },
 
-  'library-filter'(el) { appData.libraryFilter = el.value; renderApp(); if (el.value === 'wanted') { const task = preloadOwnedSets(); if (task) task.then(() => { if (!appData.activeSetId && appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') renderApp(); }); } },
+  'library-filter'(el) { 
+    appData.libraryFilter = el.value; 
+    if (el.value === 'wanted') {
+      if (window.location.hash.toLowerCase() !== '#hunt') history.pushState(null, '', '#hunt');
+      const task = preloadOwnedSets(); 
+      if (task) task.then(() => { if (!appData.activeSetId && appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') renderApp(); }); 
+    } else {
+      if (window.location.hash.toLowerCase() === '#hunt' || window.location.hash.toLowerCase() === '#wanted') {
+        history.pushState(null, '', window.location.pathname + window.location.search);
+      }
+    }
+    renderApp(); 
+  },
   'library-sort'(el) { appData.librarySort = el.value; renderApp(); },
   'missing-filter'(el) { const k=el.dataset.filterKind; if(k==='set') appData.missingSetFilter=el.value; if(k==='rarity') appData.missingRarityFilter=el.value; if(k==='type') appData.missingTypeFilter=el.value; renderApp(); },
   'back-to-top'() { window.scrollTo({ top: 0, behavior: scrollBehavior() }); },

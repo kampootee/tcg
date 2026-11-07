@@ -980,8 +980,14 @@ function renderStats() {
   }
   const rows = appData.sets.filter(isVisible).map(s => ({ s, st: getSetStats(s) }));
   const owned = rows.reduce((n, r) => n + r.st.owned, 0);
-  const done = rows.filter(r => r.st.total > 0 && r.st.owned >= r.st.total).length;
-  const totalSets = rows.length;
+
+  // Count wanted cards across all sets currently loaded in memory
+  let wantedCount = 0;
+  appData.sets.filter(isVisible).forEach(s => {
+    (s.cards || []).forEach(c => {
+      if (Number(c.want) > 0) wantedCount++;
+    });
+  });
 
   $('statsSection').innerHTML =
     // 1. Prominent Unique Cards Tile
@@ -998,19 +1004,19 @@ function renderStats() {
       </div>
     </div>` +
 
-    // 2. Completed Sets / Expansion Milestones Tile (Replaces the low % bar)
-    `<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-center gap-3 shadow-sm">
-      <div class="w-9 h-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 flex-shrink-0">
-        <i data-lucide="trophy" class="w-5 h-5 text-purple-400"></i>
+    // 2. Clickable Wanted / Hunt List Tile
+    `<div data-action="quick-wanted" role="button" tabindex="0" class="group bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-xl p-3 flex items-center gap-3 shadow-sm transition cursor-pointer">
+      <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0 group-hover:scale-105 transition-transform">
+        <i data-lucide="star" class="w-5 h-5 text-amber-400"></i>
       </div>
-      <div class="flex-1 min-w-0">
+      <div class="min-w-0 flex-1">
         <div class="flex items-center justify-between leading-tight">
-          <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Sets Completed</span>
-          <span class="text-xs font-bold text-purple-300 font-mono">${done} / ${totalSets}</span>
+          <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Hunt List</span>
+          <span class="text-[10px] text-poke-yellow opacity-0 group-hover:opacity-100 transition-opacity">View cards &rarr;</span>
         </div>
         <div class="flex items-baseline gap-1.5 mt-0.5">
-          <span class="font-display text-2xl sm:text-3xl font-extrabold text-white leading-none tracking-tight">${done}</span>
-          <span class="text-[11px] text-slate-400 truncate">master sets finished (${totalSets} active)</span>
+          <span class="font-display text-2xl sm:text-3xl font-extrabold text-white leading-none tracking-tight">${wantedCount}</span>
+          <span class="text-[11px] text-amber-300">cards sought</span>
         </div>
       </div>
     </div>`;

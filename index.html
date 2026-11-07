@@ -84,6 +84,17 @@
   @media (prefers-reduced-motion: reduce) {
     *:not(.animate-spin) { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   }
+  /* Inward creeping gold aura for Reverse Holos (~10% inward bleed) */
+  .rev-holo-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 
+      inset 0 0 16px 2px rgba(251, 191, 36, 0.5),
+      inset 0 0 4px 1px rgba(255, 203, 5, 0.75);
+  }
 </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen antialiased flex flex-col selection:bg-poke-red selection:text-white overflow-x-clip">
@@ -1388,6 +1399,7 @@ function renderCardsBinder(set, cards) {
 
           return `<div ${inspectAttrs(set.name, c)} class="holo-sheen group/pocket relative flex flex-col justify-between p-1 sm:p-2 rounded-lg sm:rounded-xl border ${revBorder} bg-slate-900/90 transition-all duration-200 cursor-pointer overflow-hidden aspect-[2.5/3.5]">
             <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="${esc(c.name)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain p-0.5 sm:p-1">
+            ${c.isRev ? '<div class="rev-holo-glow"></div>' : ''}
             <div class="relative z-10 flex items-center justify-between gap-1 pointer-events-none">
               <div class="flex items-center gap-1">
                 <span class="font-mono text-[8px] sm:text-[10px] font-bold px-1 py-0.5 sm:px-1.5 rounded bg-slate-950/85 border border-slate-800 text-slate-300">#${esc(num)}</span>

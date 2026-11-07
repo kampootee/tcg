@@ -298,7 +298,8 @@ const appData = {
   sets: [], filterStatus: 'all', searchQuery: '', viewMode: 'table', activeSetId: null, binderPage: 0, binderMode: 'flip', binderDir: 'next',
   librarySort: 'sheet', libraryFilter: 'all', libraryPage: 'sets',
   missingSetFilter: 'all', missingRarityFilter: 'all', missingTypeFilter: 'all',
-  cfg: { sheetId: CONFIG.sheetId, autoSync: true, lastSynced: null }
+  totalWanted: null,
+  cfg: { sheetId: CONFIG.sheetId, autoSync: true, lastSynced: null, totalWanted: null }
 };
 let setByName = new Map();
 
@@ -573,6 +574,15 @@ let manifestProblems = [];
 
 function rowsToManifest(rows) {
   if (!rows.length) return null;
+
+  // Read Cell N1 of Sets tab: Column N (index 13), Row 1 (index 0)
+  const rawN1 = rows[0] && rows[0][13] !== undefined ? String(rows[0][13]).replace(/[,]/g, '').trim() : '';
+  const n1Val = parseFloat(rawN1);
+  if (!isNaN(n1Val)) {
+    appData.totalWanted = n1Val;
+    appData.cfg.totalWanted = n1Val;
+  }
+
   const start = /^(code|id|tab|set|set code|tab name|name)$/i.test((rows[0][0] || '').trim()) ? 1 : 0;
   const manifest = [];
   for (let i = start; i < rows.length; i++) {
@@ -981,13 +991,14 @@ function renderStats() {
   const rows = appData.sets.filter(isVisible).map(s => ({ s, st: getSetStats(s) }));
   const owned = rows.reduce((n, r) => n + r.st.owned, 0);
 
-  // Count wanted cards across all sets currently loaded in memory
-  let wantedCount = 0;
+  // Read instant total from Cell N1; fallback to loaded card count if not synced yet
+  let loadedWanted = 0;
   appData.sets.filter(isVisible).forEach(s => {
     (s.cards || []).forEach(c => {
-      if (Number(c.want) > 0) wantedCount++;
+      if (Number(c.want) > 0) loadedWanted++;
     });
   });
+  const wantedCount = (appData.totalWanted !== null && appData.totalWanted !== undefined) ? appData.totalWanted : loadedWanted;
 
   $('statsSection').innerHTML =
     // 1. Prominent Unique Cards Tile
@@ -1889,9 +1900,14 @@ if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || wi
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  try {
+try {
     const p = JSON.parse(store.get(CONFIG.storageKey) || 'null');
-    if (p && p.sheetId) appData.cfg = { ...appData.cfg, sheetId: p.sheetId, autoSync: p.autoSync !== false, lastSynced: p.lastSynced || null };
+    if (p && p.sheetId) {
+      appData.cfg = { ...appData.cfg, sheetId: p.sheetId, autoSync: p.autoSync !== false, lastSynced: p.lastSynced || null, totalWanted: p.totalWanted ?? null };
+      if (p.totalWanted !== undefined && p.totalWanted !== null) {
+        appData.totalWanted = p.totalWanted;
+      }
+    }
   } catch (e) { console.warn('Config read notice:', e); }
 
   const c = appData.cfg;

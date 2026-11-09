@@ -1691,6 +1691,14 @@ function scrollSetActionBarIntoView() {
   window.scrollTo({ top: Math.max(0, targetTop), behavior: scrollBehavior() });
 }
 
+  const FILTER_SLUGS = { need: 'missing', own: 'owned', dupe: 'dupes' };
+  const SLUG_TO_FILTER = { missing: 'need', need: 'need', owned: 'own', own: 'own', dupe: 'dupe', dupes: 'dupe', duplicates: 'dupe' };
+  function buildSetHash(set, mode = appData.viewMode, filter = appData.filterStatus) {
+  const code = (set.code || set.tab).toUpperCase();
+  if (mode === 'binder') return `#${code}/binder`;
+  return FILTER_SLUGS[filter] ? `#${code}/${FILTER_SLUGS[filter]}` : `#${code}`;
+}
+
 async function openSet(set, initialMode = 'table') {
   appData.viewMode = initialMode;
   if (appData.viewMode === 'binder') {
@@ -1699,11 +1707,11 @@ async function openSet(set, initialMode = 'table') {
   appData.binderPage = 0;
 
   // Build the target hash (e.g. #JPSV9 or #JPSV9/binder)
-  const baseCode = (set.code || set.tab).toUpperCase();
-  const targetHash = initialMode === 'binder' ? `#${baseCode}/binder` : `#${baseCode}`;
-
+  const targetHash = buildSetHash(set, initialMode, appData.filterStatus);
+  const currentBase = window.location.hash.replace(/^#\/?/, '').split(/[\/?]/)[0].toUpperCase();
+  const sameSet = currentBase === (set.code || set.tab).toUpperCase();
   if (window.location.hash.toUpperCase() !== targetHash.toUpperCase()) {
-    history.pushState(null, '', targetHash);
+    history[sameSet ? 'replaceState' : 'pushState'](null, '', targetHash);
   }
 
   window.scrollTo({ top: 0, behavior: 'auto' });
@@ -1800,7 +1808,12 @@ const ACTIONS = {
   'export-csv'() { $('exportDropdown').classList.add('hidden'); exportToCSV(); },
   'export-json'() { $('exportDropdown').classList.add('hidden'); exportToJSON(); },
   'clear-search'() { const i = $('searchInput'); i.value = ''; i.focus(); handleSearch(''); },
-  filter(el) { appData.filterStatus = el.dataset.filter; renderApp(); },
+  filter(el) {
+    appData.filterStatus = el.dataset.filter;
+    const set = appData.sets.find(s => s.id === appData.activeSetId);
+    if (set && appData.viewMode !== 'binder') history.replaceState(null, '', buildSetHash(set));
+    renderApp();
+  },
 view(el) {
     appData.viewMode = el.dataset.mode;
     if (appData.viewMode === 'binder') appData.filterStatus = 'all';
@@ -1808,9 +1821,7 @@ view(el) {
     // Update URL hash to reflect the current view mode
     const set = appData.sets.find(s => s.id === appData.activeSetId);
     if (set) {
-      const baseCode = (set.code || set.tab).toUpperCase();
-      const targetHash = appData.viewMode === 'binder' ? `#${baseCode}/binder` : `#${baseCode}`;
-      history.replaceState(null, '', targetHash);
+      history.replaceState(null, '', buildSetHash(set));
     }
 
     renderApp();
@@ -1904,10 +1915,11 @@ function checkUrlHash() {
   }
 
   // 2. Existing set & binder hash logic
-  const parts = rawHash.split(/[\/?]/);
+  const parts = rawHash.split(/[\/?]/).map(p => p.replace(/^#/, '').trim());
   const targetCode = (parts[0] || '').toUpperCase();
   const subView = (parts[1] || '').toLowerCase();
   const wantsBinder = subView === 'binder' || rawHash.toLowerCase().includes('view=binder');
+  const wantedFilter = SLUG_TO_FILTER[subView] || 'all';
 
   const target = appData.sets.find(s => 
     (s.code || '').toUpperCase() === targetCode || 
@@ -1917,6 +1929,12 @@ function checkUrlHash() {
 
   if (target && isVisible(target)) {
     appData.activeSetId = target.id;
+    openSet(target, wantsBinder ? 'binder' : 'table');
+  }
+
+    if (target && isVisible(target)) {
+    appData.activeSetId = target.id;
+    appData.filterStatus = wantsBinder ? 'all' : wantedFilter;
     openSet(target, wantsBinder ? 'binder' : 'table');
   }
 }

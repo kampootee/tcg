@@ -1693,10 +1693,17 @@ function scrollSetActionBarIntoView() {
 
   const FILTER_SLUGS = { need: 'missing', own: 'owned', dupe: 'dupes' };
   const SLUG_TO_FILTER = { missing: 'need', need: 'need', owned: 'own', own: 'own', dupe: 'dupe', dupes: 'dupe', duplicates: 'dupe' };
-  function buildSetHash(set, mode = appData.viewMode, filter = appData.filterStatus) {
+  
+function buildSetHash(set, mode = appData.viewMode, filter = appData.filterStatus) {
   const code = (set.code || set.tab).toUpperCase();
-  if (mode === 'binder') return `#${code}/binder`;
-  return FILTER_SLUGS[filter] ? `#${code}/${FILTER_SLUGS[filter]}` : `#${code}`;
+  const path = mode === 'binder' ? `${code}/binder` : (FILTER_SLUGS[filter] ? `${code}/${FILTER_SLUGS[filter]}` : code);
+  const q = (appData.searchQuery || '').trim();
+  return `#${path}${q ? `?q=${encodeURIComponent(q)}` : ''}`;
+}
+function syncSetHash() {   // keep the URL in step with the open set's filter + search
+  const set = appData.sets.find(s => s.id === appData.activeSetId);
+  if (!set) return;
+  try { history.replaceState(null, '', buildSetHash(set)); } catch (e) {}
 }
 
 async function openSet(set, initialMode = 'table') {
@@ -1879,7 +1886,7 @@ function handleSearch(val) {
   appData.searchQuery = val;
   $('clearSearchBtn').classList.toggle('hidden', !val.trim());
   if (val.trim() && !appData.activeSetId) { const p = preloadOwnedSets(); if (p) setTimeout(renderApp, 0); }
-  clearTimeout(searchTimer); searchTimer = setTimeout(renderApp, 150);
+  clearTimeout(searchTimer); searchTimer = setTimeout(() => { syncSetHash(); renderApp(); }, 150);
 }
 $('searchInput').addEventListener('input', e => handleSearch(e.target.value));
 window.addEventListener('scroll', () => { const b=$('backToTopBtn'); if(b) { b.classList.toggle('hidden', window.scrollY < 500); b.classList.toggle('flex', window.scrollY >= 500); } }, {passive:true});
@@ -1915,11 +1922,17 @@ function checkUrlHash() {
   }
 
   // 2. Existing set & binder hash logic
-  const parts = rawHash.split(/[\/?]/).map(p => p.replace(/^#/, '').trim());
+  const rawFull = window.location.hash.replace(/^#\/?/, '').trim();
+  const qMark = rawFull.indexOf('?');
+  const pathRaw = qMark < 0 ? rawFull : rawFull.slice(0, qMark);
+  const params = new URLSearchParams(qMark < 0 ? '' : rawFull.slice(qMark + 1));
+  let pathDecoded = pathRaw; try { pathDecoded = decodeURIComponent(pathRaw); } catch (e) {}
+  const parts = pathDecoded.split('/').map(p => p.replace(/^#/, '').trim());  // also accepts #ME6/#owned
   const targetCode = (parts[0] || '').toUpperCase();
   const subView = (parts[1] || '').toLowerCase();
-  const wantsBinder = subView === 'binder' || rawHash.toLowerCase().includes('view=binder');
+  const wantsBinder = subView === 'binder' || params.get('view') === 'binder';
   const wantedFilter = SLUG_TO_FILTER[subView] || 'all';
+  const wantedQuery = params.get('q') || '';
 
   const target = appData.sets.find(s => 
     (s.code || '').toUpperCase() === targetCode || 
@@ -1929,6 +1942,13 @@ function checkUrlHash() {
 
   if (target && isVisible(target)) {
     appData.activeSetId = target.id;
+    appData.filterStatus = wantsBinder ? 'all' : wantedFilter;
+    const box = $('searchInput');
+    if (box && document.activeElement !== box) {   // don't overwrite text the user is typing
+      appData.searchQuery = wantedQuery;
+      box.value = wantedQuery;
+      $('clearSearchBtn').classList.toggle('hidden', !wantedQuery.trim());
+    }
     openSet(target, wantsBinder ? 'binder' : 'table');
   }
 

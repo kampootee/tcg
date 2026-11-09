@@ -1145,7 +1145,6 @@ function renderSetCard(set) {
       <div class="flex items-center justify-between text-xs text-slate-200 font-semibold mt-2">
         <span>${st.owned} / ${st.total} owned</span>
         <div class="flex items-center gap-1.5 flex-shrink-0">
-        <button data-action="share" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Share this page" aria-label="Share this page"><i data-lucide="share-2" class="w-4 h-4"></i></button>
           <span class="font-bold ${complete ? 'text-emerald-300' : 'text-poke-yellow'}">${st.pct}%</span>
           ${st.secrets > 0 ? `<span class="text-slate-600 font-mono">·</span><span class="text-[11px] font-bold text-amber-300 inline-flex items-center gap-0.5" title="${st.secrets} secret rares"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i><span>${st.secrets}</span></span>` : ''}
         </div>
@@ -1346,6 +1345,7 @@ function renderActiveSetView(container) {
           <div class="font-display font-bold text-sm sm:text-base text-white truncate">${formatSplitTitle(set.name)}</div>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
+          <button data-action="share" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Share this page" aria-label="Share this page"><i data-lucide="share-2" class="w-4 h-4"></i></button>
           <span class="text-xs sm:text-sm font-bold ${st.pct === 100 ? 'text-emerald-400' : 'text-poke-yellow'}">${st.pct}%</span>
           <div class="hidden sm:block w-20 md:w-28 bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400 h-full rounded-full" style="width:${st.pct}%"></div></div>
         </div>

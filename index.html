@@ -1153,6 +1153,8 @@ function renderSetCard(set) {
     </div></div>`;
 }
 function renderLibraryShelf(container) {
+  const isSecretInSet = (c, s) => Number(s.manifestBase) > 0 && parseCardNum(c.number) > Number(s.manifestBase);
+  const passes = (c, s) => f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0) || (f === 'secret' && isSecretInSet(c, s));
   const q = appData.searchQuery.toLowerCase().trim();
   const f = appData.filterStatus;
   const passes = c => f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0);
@@ -1330,10 +1332,10 @@ function renderActiveSetView(container) {
   const q = appData.searchQuery.toLowerCase().trim(), f = appData.filterStatus;
   const isBinder = appData.viewMode === 'binder';
   // In binder view, show full pocket layout regardless of active filter so empty sleeves display naturally
-  const cards = set.cards.filter(c => (!q || c._q.includes(q)) && (isBinder || f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0)));
+  const cards = set.cards.filter(c => (!q || c._q.includes(q)) && (isBinder || f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0)) || (f === 'secret' && isSecretCard(c)));
   const st = getSetStats(set);
   const tab = (k, label, n, color) => `<button data-action="filter" data-filter="${k}" class="px-2.5 py-1 rounded-lg font-medium transition ${f === k ? `${color} bg-slate-800` : 'text-slate-400 hover:text-white'}">${label} (${n})</button>`;
-  const filterPills = isBinder ? '' : `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs overflow-x-auto max-w-full">${tab('all', 'All', st.total, 'text-white')}${tab('need', 'Missing', st.needed, 'text-amber-400')}${tab('own', 'Owned', st.owned, 'text-emerald-400')}${tab('dupe', 'Dupes', st.dupes, 'text-blue-400')}</div>`;
+  const filterPills = isBinder ? '' : `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs overflow-x-auto max-w-full">${tab('all', 'All', st.total, 'text-white')}${tab('need', 'Missing', st.needed, 'text-amber-400')}${tab('own', 'Owned', st.owned, 'text-emerald-400')}${tab('dupe', 'Dupes', st.dupes, 'text-blue-400')}${st.totalSecrets > 0 ? tab('secret', 'Secrets', st.totalSecrets, 'text-amber-300') : ''}</div>`;
   const vm = (mode, icon, label) => `<button data-action="view" data-mode="${mode}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition ${appData.viewMode === mode ? 'text-poke-yellow bg-slate-800' : 'text-slate-400 hover:text-white'}"><i data-lucide="${icon}" class="w-4 h-4"></i><span class="text-xs">${label}</span></button>`;
   const viewToggle = `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs flex-shrink-0">${vm('table', 'list', 'Table')}${vm('binder', 'book-open', 'Binder')}</div>`;
   const copyMissing = (!isBinder && f === 'need') ? `<button data-action="copy-missing" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm" title="Copy all missing cards formatted as 001 Card Name"><i data-lucide="copy" class="w-3.5 h-3.5 text-amber-400"></i><span>Copy Missing</span></button>` : '';
@@ -1718,9 +1720,10 @@ function scrollSetActionBarIntoView() {
   const targetTop = bar.getBoundingClientRect().top + window.scrollY - headerHeight;
   window.scrollTo({ top: Math.max(0, targetTop), behavior: scrollBehavior() });
 }
-
-  const FILTER_SLUGS = { need: 'missing', own: 'owned', dupe: 'dupes' };
-  const SLUG_TO_FILTER = { missing: 'need', need: 'need', owned: 'own', own: 'own', dupe: 'dupe', dupes: 'dupe', duplicates: 'dupe' };
+  
+  const FILTER_SLUGS = { need: 'missing', own: 'owned', dupe: 'dupes', secret: 'secrets' };
+  const SLUG_TO_FILTER = { missing: 'need', need: 'need', owned: 'own', own: 'own', dupe: 'dupe', dupes: 'dupe', duplicates: 'dupe', secret: 'secret', secrets: 'secret' };
+  const FILTERS = [['all', 'All'], ['need', 'Need'], ['own', 'Owned'], ['dupe', 'Duplicates'], ['secret', 'Secrets']];
   
 function buildSetHash(set, mode = appData.viewMode, filter = appData.filterStatus) {
   const code = (set.code || set.tab).toUpperCase();

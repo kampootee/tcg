@@ -278,7 +278,7 @@ const store = {
 };
 const cleanKey = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const cardKey = n => { const s = String(n).split('/')[0].trim(); return /^\d+$/.test(s) ? String(parseInt(s, 10)) : s.toUpperCase(); };
-const esc = str => str == null ? '' : String(str).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
+const esc = str => str == null ? '' : String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const pad = n => { const v = String(n ?? '').trim(); return !v ? '?' : /^\d+$/.test(v) ? v.padStart(3, '0') : v; };
 const parseSheetNumber = (value, fallback = 0) => {
   const n = parseFloat(String(value ?? '').replace(/[,%]/g, '').trim());

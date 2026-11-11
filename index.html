@@ -1361,12 +1361,12 @@ function renderActiveSetView(container) {
     </div>
     <div class="p-4 sm:p-5 bg-slate-950/40">${dataWarning(set)}${!cards.length ? `<div class="py-12 text-center text-xs text-slate-500">No cards match your filter criteria in this set.</div>` : appData.viewMode === 'binder' ? renderCardsBinder(set, cards) : renderCardsTable(set, cards)}</div></div>`;
 }
-
-function renderCardsTable(set, cards) {
+  
+  function renderCardsTable(set, cards) {
   const hasType = set.cards.some(c => c.type), name = set.name;
-  const manifestBase = Number(set.manifestBase) || 0;
-  const baseTotal = manifestBase > 0 ? manifestBase : (Number(set.manifestTotal) || 0);
-  const isSecretCard = c => baseTotal > 0 && parseCardNum(c.number) > baseTotal;
+  const hasExplicitBase = Number(set.manifestBase) > 0;
+  const baseTotal = hasExplicitBase ? Number(set.manifestBase) : (Number(set.manifestTotal) || 0);
+  const isSecretCard = c => hasExplicitBase && parseCardNum(c.number) > baseTotal;
   const colCount = hasType ? 7 : 6;
 
   const mobile = cards.map((c, idx) => {

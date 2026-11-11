@@ -19,7 +19,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>
   var PLACEHOLDER = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 350"><rect width="250" height="350" rx="14" fill="#0f172a" stroke="#334155" stroke-width="4"/><circle cx="125" cy="175" r="38" fill="none" stroke="#475569" stroke-width="6"/><path d="M87 175h76" stroke="#475569" stroke-width="6"/><circle cx="125" cy="175" r="12" fill="#0f172a" stroke="#475569" stroke-width="6"/></svg>');
-  // Walks the full list of candidate URLs (data-srcs, "|" separated) before giving up on the placeholder.
   window.imgOk = window.imgOk || {};
   window.rememberImg = function (img) { if (img.dataset.first && img.src && img.src.indexOf('data:') !== 0) window.imgOk[img.dataset.first] = img.src; };
   window.handleImgFallback = function (img) {
@@ -46,7 +45,6 @@
   ::-webkit-scrollbar-thumb:hover { background: #334155; }
   .holo-sheen { position: relative; overflow: hidden; transition: border-color .25s ease, box-shadow .25s ease, background-color .25s ease; }
   .holo-sheen::after { display: none; }
-  /* Binder Page Flip Animations */
   @keyframes binderFlipNext {
     0% { opacity: 0; transform: translateX(24px) scale(0.98); }
     100% { opacity: 1; transform: translateX(0) scale(1); }
@@ -57,7 +55,6 @@
   }
   .binder-page-enter-next { animation: binderFlipNext 0.22s ease-out forwards; }
   .binder-page-enter-prev { animation: binderFlipPrev 0.22s ease-out forwards; }
-
   .card-art-bg { background-size: cover; background-position: center top; transition: opacity .35s ease, transform .4s ease, filter .35s ease; }
   :focus-visible { outline: 2px solid #FFCB05; outline-offset: 3px; }
   button, select, input { touch-action: manipulation; }
@@ -67,21 +64,8 @@
     #statsSection > * { min-height: 66px; }
     #setsContainer .set-library-controls { position: relative; }
     .holo-sheen::after { display: none; }
-  /* Binder Page Flip Animations */
-  @keyframes binderFlipNext {
-    0% { opacity: 0; transform: translateX(24px) scale(0.98); }
-    100% { opacity: 1; transform: translateX(0) scale(1); }
-  }
-  @keyframes binderFlipPrev {
-    0% { opacity: 0; transform: translateX(-24px) scale(0.98); }
-    100% { opacity: 1; transform: translateX(0) scale(1); }
-  }
-  .binder-page-enter-next { animation: binderFlipNext 0.22s ease-out forwards; }
-  .binder-page-enter-prev { animation: binderFlipPrev 0.22s ease-out forwards; }
-
   }
   [role="button"][data-action] { cursor: pointer; }
-  /* Inward creeping gold aura for Reverse Holos overlaying the card (~10% inward bleed) */
   .rev-holo-glow {
     position: absolute;
     inset: 0;
@@ -169,15 +153,13 @@
     <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
       <div class="flex items-center gap-2.5">
         <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0"><i data-lucide="sheet" class="w-4 h-4"></i></div>
-        <div><h2 class="font-display text-base font-bold text-white">How This Sheet Works</h2><p class="text-[11px] text-slate-400">Google Sheets format &amp; mapping reference</p></div>
+        <div><h2 class="font-display text-base font-bold text-white">How This Sheet Works</h2><p class="text-[11px] text-slate-400">Google Sheets format & mapping reference</p></div>
       </div>
       <button data-action="close-modal" data-id="setupModal" aria-label="Close" class="text-slate-400 hover:text-white p-1 rounded-lg transition"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
 
     <div class="p-4 sm:p-5 space-y-4 text-xs">
-      <!-- 2-Column Cheat Sheet Layout -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <!-- Sets Tab Cheat Sheet -->
         <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3.5 space-y-2">
           <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
             <span class="font-bold text-emerald-300 flex items-center gap-1.5"><i data-lucide="layers" class="w-3.5 h-3.5"></i> Tab: Sets</span>
@@ -189,14 +171,13 @@
             <li><span class="text-emerald-400 font-bold">Col C</span>: Release Date (YYYY-MM-DD)</li>
             <li><span class="text-emerald-400 font-bold">Col D</span>: Cover Card #</li>
             <li><span class="text-emerald-400 font-bold">Col E</span>: Language (EN / JP)</li>
-            <li><span class="text-emerald-400 font-bold">Col F</span>: Owned Count (&gt;0 to show)</li>
+            <li><span class="text-emerald-400 font-bold">Col F</span>: Owned Count (>0 to show)</li>
             <li><span class="text-emerald-400 font-bold">Col G</span>: Total Cards</li>
             <li><span class="text-emerald-400 font-bold">Col H</span>: Completion %</li>
             <li><span class="text-emerald-400 font-bold">Col M</span>: Base Set Size (e.g. 88)</li>
           </ul>
         </div>
 
-        <!-- Individual Card Tab Cheat Sheet -->
         <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3.5 space-y-2">
           <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
             <span class="font-bold text-emerald-300 flex items-center gap-1.5"><i data-lucide="credit-card" class="w-3.5 h-3.5"></i> Card Tabs</span>
@@ -217,7 +198,6 @@
         </div>
       </div>
 
-      <!-- Quick Rules & Sync -->
       <div class="rounded-xl bg-slate-950/70 border border-slate-800 p-3.5 space-y-2.5">
         <div class="flex items-center justify-between">
           <span class="font-semibold text-slate-200 flex items-center gap-1.5"><i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-poke-yellow"></i> Live Sync Link</span>
@@ -273,14 +253,14 @@
 const CONFIG = {
   sheetId: '1jXPzYP4A0JOY3eutdO4KWgQkARGwrGXAcd3fR5n9yo0',
   setsTabName: 'Sets',
-  apiKey: '',                      // optional Google API key: reads cells as exact text, so 50a / H1 can't be blanked by Google's CSV feed
-  setsGid: '',                     // optional: the number after gid= in the Sets tab's URL; works even if the tab is renamed
-  sortBy: 'sheet',                 // 'sheet' = row order of the Sets tab, 'release' = by release date
+  apiKey: '',
+  setsGid: '',
+  sortBy: 'sheet',
   dexKey: 'poke_vault_dex5',
   fetchTimeoutMs: 12000,
   storageKey: 'poke_vault_config_v5',
-  gridArtPosition: '50% 12%',      // Grid view backdrop: which part of the card art shows. Lower % = higher up the card (more art, less attack text); raise it to shift down
-  loadAllForSought: false,         // card tabs load on demand; search and collection summaries preload when opened
+  gridArtPosition: '50% 12%',
+  loadAllForSought: false,
   cacheKey: 'poke_vault_cache_v6'
 };
 
@@ -298,21 +278,20 @@ const store = {
 };
 const cleanKey = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const cardKey = n => { const s = String(n).split('/')[0].trim(); return /^\d+$/.test(s) ? String(parseInt(s, 10)) : s.toUpperCase(); };
-const esc = str => str == null ? '' : String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+const esc = str => str == null ? '' : String(str).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"').replace(/'/g, ''');
 const pad = n => { const v = String(n ?? '').trim(); return !v ? '?' : /^\d+$/.test(v) ? v.padStart(3, '0') : v; };
 const parseSheetNumber = (value, fallback = 0) => {
   const n = parseFloat(String(value ?? '').replace(/[,%]/g, '').trim());
   return Number.isFinite(n) ? n : fallback;
 };
 const isOwned = c => c.status !== 'need';
-// A set is shown only if column F of the Sets tab holds a number above 0. Loaded cards never change that.
 const isVisible = s => Number(s.manifestOwned) > 0;
 
 const appData = {
   sets: [], filterStatus: 'all', searchQuery: '', viewMode: 'table', activeSetId: null, binderPage: 0, binderMode: 'flip', binderDir: 'next',
   librarySort: 'sheet', libraryFilter: 'all', libraryPage: 'sets',
   missingSetFilter: 'all', missingRarityFilter: 'all', missingTypeFilter: 'all',
-  totalWanted: null,
+  totalWanted: null, showAllHits: false,
   cfg: { sheetId: CONFIG.sheetId, autoSync: true, lastSynced: null, totalWanted: null }
 };
 let setByName = new Map();
@@ -320,13 +299,12 @@ let setByName = new Map();
 let cacheTimer = null;
 const saveCacheSoon = () => { clearTimeout(cacheTimer); cacheTimer = setTimeout(saveCache, 400); };
 function saveState() { store.set(CONFIG.storageKey, JSON.stringify(appData.cfg)); }
-// Images/search text are rebuilt on load, so they are not saved.
 function saveCache() {
   store.set(CONFIG.cacheKey, JSON.stringify(appData.sets.map(({ images, enriched, stale, loadFailed, ...s }) => ({ ...s, cards: (s.cards || []).map(({ _q, ...c }) => c) }))));
 }
 
 /* ==========================================================
-   DYNAMIC SET METADATA (TCGdex) - only for sets you actually show
+   DYNAMIC SET METADATA (TCGdex)
    ========================================================== */
 const TCGDEX = 'https://api.tcgdex.net/v2';
 const DEX_TTL = 24 * 60 * 60 * 1000;
@@ -370,10 +348,8 @@ async function dexDetail(lang, id) {
   } catch (e) { return c[k] ? c[k].v : null; }
 }
 
-// Name key that keeps non-Latin letters (cleanKey would turn a Japanese title into an empty string).
 const nameKey = s => String(s || '').toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
 
-// me5 / sv3pt5 / base1 -> every spelling TCGdex might use as an id (me05, sv03.5 ...).
 function idVariants(text) {
   const t = String(text).trim().toLowerCase().replace(/\s+/g, '');
   const m = t.match(/^([a-z]+)(\d+)(?:pt|\.)?(5)?$/);
@@ -404,7 +380,6 @@ function findDexEntry(index, text) {
   return null;
 }
 
-// TCGdex ids -> pokemontcg.io ids (sv01 -> sv1, sv03.5 -> sv3pt5). WOTC ids already match.
 const ptcgCode = id => String(id).replace(/^([a-z]+)0*(\d+)\.5$/i, '$1$2pt5').replace(/^([a-z]+)0+(\d)/i, '$1$2');
 
 async function enrichSet(set) {
@@ -424,7 +399,6 @@ async function enrichSet(set) {
   return true;
 }
 
-// Debounced + only for visible sets (owned > 0 or already loaded), once per set.
 let enrichTimer = null, enriching = false;
 function scheduleEnrich() { clearTimeout(enrichTimer); enrichTimer = setTimeout(runEnrich, 150); }
 async function runEnrich() {
@@ -461,13 +435,12 @@ function sortSets(sets) {
 }
 
 /* ==========================================================
-   IMAGE RESOLUTION - returns an ordered list of candidate URLs
+   IMAGE RESOLUTION
    ========================================================== */
 const LIMITLESS_JP = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpc';
 const LIMITLESS_EN = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/tpci';
 const LIMITLESS_ICON = 'https://s3.limitlesstcg.com/sets/jp';
 
-// Art code (Sets col I) wins, then the set code; a leading "JP" is ignored.
 const artKey = set => String(set.artCode || set.code || set.tab || '').trim().replace(/^jp[-_\s]*/i, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 function normalizeImageUrl(u) {
@@ -503,9 +476,7 @@ function getCardImageSources(set, card) {
   const setCode = activeSet.code || activeSet.tab || '';
   const isJp = activeSet.lang === 'JP' || activeSet.isJapanese || /^jp/i.test(setCode);
 
-  // 1. Determine Scrydex Set Slug
   let scrydexSlug = (activeSet.scrydexId || '').trim();
-
   if (!scrydexSlug && setCode) {
     if (isJp) {
       const cleanCode = setCode.replace(/^jp/i, '').replace(/jp$/i, '').toLowerCase();
@@ -515,7 +486,6 @@ function getCardImageSources(set, card) {
     }
   }
 
-  // 2. Card numbering extraction
   const rawNum = String(card && (card.number || card.num || '')).split('/')[0].trim();
   const num = rawNum.replace(/^0+(?=\d)/, '');
   const p3 = n => /^\d+$/.test(n) ? n.padStart(3, '0') : n;
@@ -523,11 +493,8 @@ function getCardImageSources(set, card) {
   const nums = Array.from(new Set([num, baseNum, p3(baseNum)]));
 
   const chain = [];
-
-  // Column J custom image override (always first priority)
   if (card && card.imageUrl) chain.push(card.imageUrl);
 
-  // 3. Add Scrydex CDN Candidates
   if (scrydexSlug) {
     for (const n of nums) {
       chain.push(`https://images.scrydex.com/pokemon/${scrydexSlug}-${n}/large`);
@@ -573,7 +540,7 @@ const imgSrcAttrs = srcs => {
 const imgTag = (set, card, cls) => `<img ${imgSrcAttrs(getCardImageSources(set, card))} alt="${esc(card.name)}" loading="lazy" decoding="async" class="${cls}">`;
 
 /* ==========================================================
-   SHEET SYNC (Sets manifest first, card tabs on demand)
+   SHEET SYNC
    ========================================================== */
 async function fetchText(url, ms = CONFIG.fetchTimeoutMs) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
@@ -589,7 +556,6 @@ let manifestProblems = [];
 function rowsToManifest(rows) {
   if (!rows.length) return null;
 
-  // Read Cell N1 of Sets tab: Column N (index 13), Row 1 (index 0)
   const rawN1 = rows[0] && rows[0][13] !== undefined ? String(rows[0][13]).replace(/[,]/g, '').trim() : '';
   const n1Val = parseFloat(rawN1);
   if (!isNaN(n1Val)) {
@@ -604,7 +570,7 @@ function rowsToManifest(rows) {
     if (!r || !r[0] || !r[0].trim()) continue;
     const code = r[0].trim();
     const isJp = /jp/i.test(r[4] || '') || /^jp/i.test(code);
-    const tabName = code; // 1:1 match to sheet tab
+    const tabName = code;
     const owned = parseFloat(r[5]) || 0, total = parseFloat(r[6]) || 0;
     let pct = parseFloat(String(r[7] ?? '').replace('%', '').trim());
     if (isNaN(pct) && total > 0) pct = (owned / total) * 100;
@@ -636,10 +602,10 @@ async function fetchSetsManifest(sheetId) {
   for (const [label, url] of tries) {
     try {
       const text = await fetchText(`${url}&t=${Date.now()}`);
-      if (/^\s*</.test(text)) { manifestProblems.push(`${label}: Google returned a web page instead of data (the sheet is probably not shared as "Anyone with the link can view", or the sheet ID is wrong).`); continue; }
+      if (/^\s*</.test(text)) { manifestProblems.push(`${label}: Google returned a web page instead of data (link sharing must be "Anyone with the link can view").`); continue; }
       const rows = parseCSVToArray(text);
       const colA = rows.map(r => (r[0] || '').trim()).filter(Boolean);
-      if (colA.length > 3 && colA.filter(v => /^\d+$/.test(v)).length / colA.length > 0.6) { manifestProblems.push(`${label}: this looks like a card tab (column A is card numbers), not the Sets tab. Google falls back to the first tab when a name doesn't match.`); continue; }
+      if (colA.length > 3 && colA.filter(v => /^\d+$/.test(v)).length / colA.length > 0.6) { manifestProblems.push(`${label}: this looks like a card tab, not the Sets tab.`); continue; }
       const manifest = rowsToManifest(rows);
       if (manifest) return manifest;
       manifestProblems.push(`${label}: readable, but no rows with a code in column A.`);
@@ -657,7 +623,6 @@ async function fetchApiRows(sheetId, tabName) {
 }
 
 let manifestCodeSet = new Set();
-// True when Google handed back the Sets tab (or another non-card tab) instead of the requested one
 function looksLikeSetsTab(rows) {
   const colA = rows.map(r => cleanKey(r[0])).filter(Boolean);
   const codes = manifestCodeSet.size ? manifestCodeSet : new Set((appData.sets || []).map(x => cleanKey(x.code)));
@@ -673,7 +638,6 @@ async function fetchTab(sheetId, tabName, meta = {}) {
       if (rows && looksLikeSetsTab(rows)) rows = null;
     }
     if (!rows) {
-      // gviz is case/space sensitive and silently falls back to the first tab (Sets) when the name doesn't match
       const names = [...new Set([tabName, String(tabName).trim(), String(tabName).toLowerCase(), String(tabName).toUpperCase(), `${tabName} `])];
       for (const nm of names) {
         let csv;
@@ -682,7 +646,6 @@ async function fetchTab(sheetId, tabName, meta = {}) {
         if (!csv || csv.length < 20 || /^\s*</.test(csv)) continue;
         const parsed = parseCSVToArray(csv);
         if (looksLikeSetsTab(parsed)) { console.warn(`Tab "${nm}" returned the Sets tab (name not matched by Google)`); continue; }
-        if (nm !== tabName) console.warn(`[tab fallback] "${tabName}" only matched as ${JSON.stringify(nm)} (codes: ${[...String(tabName)].map(c => c.charCodeAt(0)).join(',')})`);
         rows = parsed; break;
       }
       if (!rows) return null;
@@ -704,7 +667,7 @@ async function syncLiveSheet({ background = false } = {}) {
   icons();
   try {
     const manifest = await fetchSetsManifest(sheetId);
-    if (!manifest) throw new Error(`Could not read the "${CONFIG.setsTabName}" tab.\n\n${manifestProblems.join('\n')}\n\nSheet ID: ${sheetId}\nIf the tab has a different name, set CONFIG.setsTabName, or paste its gid into CONFIG.setsGid.`);
+    if (!manifest) throw new Error(`Could not read the "${CONFIG.setsTabName}" tab.\n\n${manifestProblems.join('\n')}\n\nSheet ID: ${sheetId}`);
     manifestCodeSet = new Set(manifest.map(m => cleanKey(m.code)));
     const prev = new Map(appData.sets.map(x => [x.id, x]));
     const fresh = manifest.map((m, idx) => {
@@ -739,7 +702,7 @@ async function syncLiveSheet({ background = false } = {}) {
     console.error('Sync error:', err);
     const diag = $('syncDiagnostics');
     if (diag) { diag.textContent = String(err.message || err); diag.classList.toggle('hidden', !!appData.sets.length); }
-    if (!background) showToast(String(err.message || err).split('\n')[0] + ' See the details on the page or in the console.', 'error');
+    if (!background) showToast(String(err.message || err).split('\n')[0] + ' See the console for details.', 'error');
     return false;
   } finally {
     syncing = false;
@@ -806,7 +769,6 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
   const sample = rows.slice(0, 10).map(r => r.join(' ')).join(' ').toLowerCase();
   if (/overview|master set progress|master set tracker|cards in set|completion %|total owned/.test(sample) || (sample.includes('total cards') && sample.includes('set name'))) return null;
 
-  // Auto-detect where card data actually begins (scans the first 8 rows)
   let start = 0;
   let notesIdx = 8;
   let imageIdx = 9;
@@ -816,17 +778,14 @@ function parseSheetCsv(tabName, csvText, meta = {}) {
     const colB = String(rows[i][1] || '').trim();
     const head = rows[i].map(c => String(c).trim().toLowerCase());
 
-    // If this row is a header row, note any custom column mappings
     if (head.some(c => /note|edition|condition|tag/.test(c))) {
       notesIdx = head.findIndex(c => /note|edition|condition|tag/.test(c));
     }
     const im = head.findIndex(c => /image|img|\burl\b|scan|pic|photo|link/.test(c));
     if (im !== -1) imageIdx = im;
 
-const isHeaderName = /^(card\s*name|name|card|title|pokemon|カード名)$/i.test(colB);
+    const isHeaderName = /^(card\s*name|name|card|title|pokemon|カード名)$/i.test(colB);
     const isHeaderColA = /^(#|num|no|card|number|id|code|pokedex|dex)$/i.test(colA);
-
-    // Matches standard numbers ("1"), Pokédex codes ("201n", "006"), or alphanumeric promo codes ("PF-1")
     const isCardId = /^[\d]+[a-z0-9_-]*$/i.test(colA) || /^[a-z0-9#-]+$/i.test(colA);
 
     if (colB && !isHeaderName && (isCardId || !isHeaderColA)) {
@@ -835,7 +794,6 @@ const isHeaderName = /^(card\s*name|name|card|title|pokemon|カード名)$/i.tes
     }
   }
 
-  // Auto-detect image URL column if present
   const urlCounts = {};
   rows.slice(start, start + 400).forEach(r => r.forEach((c, idx) => { if (cellUrl(c)) urlCounts[idx] = (urlCounts[idx] || 0) + 1; }));
   const urlCols = Object.keys(urlCounts).map(Number).sort((a, b) => urlCounts[b] - urlCounts[a] || b - a);
@@ -848,7 +806,6 @@ const isHeaderName = /^(card\s*name|name|card|title|pokemon|カード名)$/i.tes
     if (!r || r.every(c => !String(c).trim())) continue;
     const a = (r[0] || '').trim().toLowerCase(), b = (r[1] || '').trim().toLowerCase();
     
-    // Skip exact summary words ("total", "sum") or repeating headers, but keep cards like "Summit"
     if (/^(total|sum)$/i.test(a) || /^(total|sum)$/i.test(b)) continue;
     if (/^(#|num|card|number)$/i.test(a) && /^(name|card name)$/i.test(b)) continue;
 
@@ -860,9 +817,9 @@ const isHeaderName = /^(card\s*name|name|card|title|pokemon|カード名)$/i.tes
     const own = !isNaN(vF) ? vF >= 1 : /^(own|owned|yes|y|true|x)$/i.test(rawOwned);
     const notes = (r[notesIdx] ?? '').trim();
     const imageUrl = (imageIdx !== -1 && cellUrl(r[imageIdx])) || r.slice(9).map(cellUrl).find(Boolean) || '';
-    const wantRaw = String(r[7] ?? '').trim(); // Col H: Wanted (1 = wanted)
+    const wantRaw = String(r[7] ?? '').trim();
     const want = !cellUrl(wantRaw) && (parseFloat(wantRaw) >= 1 || /^(1|y|yes|x|true)$/i.test(wantRaw)) ? 1 : 0;
-    const revRaw = String(r[10] ?? '').trim(); // Col K: Reverse Holo (1 = rev)
+    const revRaw = String(r[10] ?? '').trim();
     const isRev = parseFloat(revRaw) >= 1 || /^(1|rev|reverse|yes|y|true|x)$/i.test(revRaw);
     cards.push({
       number, name, type: (r[2] || '').trim(), rarity: (r[4] || r[3] || 'Common').trim(),
@@ -870,7 +827,7 @@ const isHeaderName = /^(card\s*name|name|card|title|pokemon|カード名)$/i.tes
       isRev,
       _q: `${name} ${number} ${notes} ${isRev ? 'reverse holo rev' : ''}`.toLowerCase()
     });
-  } // <-- End of for loop
+  }
   return cards.length ? { cards, blankNumbers } : null;
 } 
 
@@ -1000,8 +957,6 @@ const dupeBadge = (c) => c.duplicates > 0 ? `<span class="px-1.5 py-0.5 rounded-
 
 function formatSplitTitle(full) {
   if (!full) return '';
-
-  // Auto-split sets starting with "McDonald's" or "McDonalds" if not already delimited
   let str = full;
   if (/^mcdonald'?s\s+/i.test(str) && !/[:\u2014\u2013]|\s+-\s+/.test(str)) {
     str = str.replace(/^(mcdonald'?s)\s+/i, "$1: ");
@@ -1048,7 +1003,6 @@ function renderStats() {
   const rows = appData.sets.filter(isVisible).map(s => ({ s, st: getSetStats(s) }));
   const owned = rows.reduce((n, r) => n + r.st.owned, 0);
 
-  // Read instant total from Cell N1; fallback to loaded card count if not synced yet
   let loadedWanted = 0;
   appData.sets.filter(isVisible).forEach(s => {
     (s.cards || []).forEach(c => {
@@ -1058,7 +1012,6 @@ function renderStats() {
   const wantedCount = (appData.totalWanted !== null && appData.totalWanted !== undefined) ? appData.totalWanted : loadedWanted;
 
   $('statsSection').innerHTML =
-    // 1. Prominent Unique Cards Tile
     `<div class="bg-slate-900/80 border border-slate-800 rounded-xl p-3 flex items-center gap-3 shadow-sm">
       <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
         <i data-lucide="sparkles" class="w-5 h-5 text-emerald-400"></i>
@@ -1071,8 +1024,6 @@ function renderStats() {
         </div>
       </div>
     </div>` +
-
-    // 2. Clickable Wanted / Hunt List Tile
     `<div data-action="quick-wanted" role="button" tabindex="0" class="group bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-xl p-3 flex items-center gap-3 shadow-sm transition cursor-pointer">
       <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 flex-shrink-0 group-hover:scale-105 transition-transform">
         <i data-lucide="star" class="w-5 h-5 text-amber-400"></i>
@@ -1080,7 +1031,7 @@ function renderStats() {
       <div class="min-w-0 flex-1">
         <div class="flex items-center justify-between leading-tight">
           <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">Hunt List</span>
-          <span class="text-[10px] text-poke-yellow opacity-0 group-hover:opacity-100 transition-opacity">View cards &rarr;</span>
+          <span class="text-[10px] text-poke-yellow opacity-0 group-hover:opacity-100 transition-opacity">View cards →</span>
         </div>
         <div class="flex items-baseline gap-1.5 mt-0.5">
           <span class="font-display text-2xl sm:text-3xl font-extrabold text-white leading-none tracking-tight">${wantedCount}</span>
@@ -1089,7 +1040,8 @@ function renderStats() {
       </div>
     </div>`;
 }
-const FILTERS = [['all', 'All'], ['need', 'Need'], ['own', 'Owned'], ['dupe', 'Duplicates']];
+
+const FILTERS = [['all', 'All'], ['need', 'Need'], ['own', 'Owned'], ['dupe', 'Duplicates'], ['secret', 'Secrets']];
 function renderToolbar() {
   $('topFilters').classList.toggle('hidden', !appData.searchQuery.trim());
   $('topFilters').innerHTML = FILTERS.map(([k, l]) => `<button data-action="filter" data-filter="${k}" class="px-3 py-1.5 rounded-lg font-medium transition ${appData.filterStatus === k ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white'}">${l}</button>`).join('');
@@ -1104,6 +1056,7 @@ function skipIdenticalRenders(el) {
     set(v) { if (v === this.__lastHtml) return; this.__lastHtml = v; _innerHTMLDesc.set.call(this, v); }
   });
 }
+
 function renderMainContent() {
   const container = $('setsContainer'), back = $('navBackToLibraryBtn');
   skipIdenticalRenders(container);
@@ -1152,12 +1105,12 @@ function renderSetCard(set) {
       <div class="w-full bg-slate-700/90 h-2 rounded-full mt-2 overflow-hidden"><div class="${complete ? 'bg-emerald-400' : 'bg-gradient-to-r from-poke-red via-poke-yellow to-emerald-400'} h-full rounded-full transition-all duration-500" style="width:${st.pct}%"></div></div>
     </div></div>`;
 }
+
 function renderLibraryShelf(container) {
-  const isSecretInSet = (c, s) => Number(s.manifestBase) > 0 && parseCardNum(c.number) > Number(s.manifestBase);
-  const passes = (c, s) => f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0) || (f === 'secret' && isSecretInSet(c, s));
   const q = appData.searchQuery.toLowerCase().trim();
   const f = appData.filterStatus;
-  const passes = c => f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0);
+  const isSecretInSet = (c, s) => Number(s.manifestBase) > 0 && parseCardNum(c.number) > Number(s.manifestBase);
+  const passes = (c, s) => f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0) || (f === 'secret' && isSecretInSet(c, s));
   const setPasses = s => {
     const st = getSetStats(s);
     if (appData.libraryFilter === 'wanted') return false;
@@ -1165,7 +1118,7 @@ function renderLibraryShelf(container) {
     if (appData.libraryFilter === 'complete' && !(st.total > 0 && st.owned >= st.total)) return false;
     return true;
   };
-  let sets = appData.sets.filter(isVisible).filter(setPasses).filter(s => !q || s.name.toLowerCase().includes(q) || (s.cards || []).some(c => c._q.includes(q) && passes(c)));
+  let sets = appData.sets.filter(isVisible).filter(setPasses).filter(s => !q || s.name.toLowerCase().includes(q) || (s.cards || []).some(c => c._q.includes(q) && passes(c, s)));
   const sortSetsForView = list => [...list].sort((a,b) => {
     const A=getSetStats(a), B=getSetStats(b);
     switch (appData.librarySort) {
@@ -1203,7 +1156,7 @@ function renderLibraryShelf(container) {
       </label>
     </div>
   </div>`;
-if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
+  if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
     const wantedCards = [];
     const visibleSets = appData.sets.filter(isVisible);
     visibleSets.forEach(set => (set.cards || []).forEach(card => {
@@ -1230,7 +1183,6 @@ if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
           <p class="text-xs text-slate-400 mt-1">${preloading ? 'Checking your visible sets in the background.' : 'Mark cards with a priority in Column J to add them here.'}</p>
         </div>`;
 
-    // Added breadcrumb & return header
     const huntHeader = `
       <div class="mb-4 flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-sm">
         <div class="flex items-center gap-2.5 min-w-0">
@@ -1257,7 +1209,7 @@ if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
   let html = controls;
   if (q) {
     const hits = [];
-    appData.sets.filter(isVisible).forEach(set => (set.cards || []).forEach(card => { if (card._q.includes(q) && passes(card)) hits.push({ set, card }); }));
+    appData.sets.filter(isVisible).forEach(set => (set.cards || []).forEach(card => { if (card._q.includes(q) && passes(card, set)) hits.push({ set, card }); }));
     const loading = !!preloading;
     if (hits.length || loading) html += `<div class="mb-4 p-4 rounded-2xl bg-slate-900/90 border border-slate-800"><div class="flex items-center justify-between mb-3"><div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-poke-yellow"></i><h3 class="font-display font-bold text-sm text-white">Matching Cards</h3><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${hits.length} Found</span></div><span class="text-xs text-slate-400">${loading ? 'Searching all sets...' : 'Select artwork for a closer look'}</span></div><div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5">${(appData.showAllHits ? hits : hits.slice(0,16)).map(({set,card})=>`<button ${inspectAttrs(set.name,card)} class="group/hit text-left flex flex-col p-2 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-poke-yellow/60 transition shadow-sm"><div class="relative w-full aspect-[2.5/3.4] rounded-lg overflow-hidden bg-slate-900 mb-1.5">${imgTag(set,card,'w-full h-full object-contain group-hover/hit:scale-105 transition duration-200')}</div><span class="truncate text-xs font-semibold text-white">${esc(card.name)}</span><span class="text-[11px] text-slate-400 mt-0.5">#${esc(pad(card.number))} · ${esc(set.name)}</span></button>`).join('')}</div>${hits.length > 16 ? `<button data-action="toggle-all-hits" class="mt-3 w-full px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-poke-yellow border border-slate-700 transition">${appData.showAllHits ? 'Show fewer' : `Show all ${hits.length} cards`}</button>` : ''}</div>`;
   }
@@ -1265,7 +1217,6 @@ if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
   const divider = `<hr class="border-t border-slate-800/80 my-8">`;
   const section = (list, header) => list.length ? header + `<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">${list.map(renderSetCard).join('')}</div>` : '';
 
-  // Helper to identify promo / special releases
   const isPromoSet = s => {
     const l = (s.lang || '').toUpperCase();
     const c = (s.code || '').toUpperCase();
@@ -1277,19 +1228,16 @@ if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
   const mainSets = sets.filter(s => !isPromoSet(s));
   const sectionsHtml = [];
 
-  // 1. English Main Expansions
   const en = mainSets.filter(s => (s.lang || 'EN').toUpperCase() === 'EN');
   if (en.length) {
     sectionsHtml.push(section(en, `<div class="mb-3 flex items-center justify-between"><div class="flex items-center gap-2"><i data-lucide="library" class="w-5 h-5 text-poke-yellow"></i><h2 class="font-display font-bold text-lg text-white">English Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${en.length} Sets</span></div></div>`));
   }
 
-  // 2. Japanese Main Expansions
   const jp = mainSets.filter(s => (s.lang || '').toUpperCase() === 'JP');
   if (jp.length) {
     sectionsHtml.push(section(jp, `<div class="mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-red-600/20 text-red-300 border border-red-500/30 text-xs font-bold">🇯🇵 JP</span><h2 class="font-display font-bold text-lg text-white">Japanese Expansions</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${jp.length} Sets</span></div>`));
   }
 
-  // 3. Other Non-Promo Languages (if any)
   [...new Set(mainSets.filter(s => !['EN', 'JP'].includes((s.lang || 'EN').toUpperCase())).map(s => s.lang.toUpperCase()))].forEach(lang => {
     const list = mainSets.filter(s => (s.lang || '').toUpperCase() === lang);
     if (list.length) {
@@ -1297,7 +1245,6 @@ if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
     }
   });
 
-  // 4. Promos & Special Collections
   if (promos.length) {
     sectionsHtml.push(section(promos, `<div class="mb-3 flex items-center gap-2.5"><span class="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold">★ SPECIAL</span><h2 class="font-display font-bold text-lg text-white">Promos & Special Releases</h2><span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">${promos.length} Sets</span></div>`));
   }
@@ -1305,17 +1252,17 @@ if (appData.libraryPage === 'sets' && appData.libraryFilter === 'wanted') {
   html += sectionsHtml.join(divider);
   container.innerHTML = html;
 }
+
 function dataWarning(set) {
   const blank = set.blankNumbers || 0, short = (Number(set.manifestTotal) || 0) - set.cards.length;
   if (blank <= 0 && short <= 0) return '';
   const lines = [];
-  if (blank > 0) lines.push(`${blank} card row${blank > 1 ? 's' : ''} came back with an empty number. Google's CSV feed blanks out text values (like 50a or H1) in a column that is mostly plain numbers.`);
+  if (blank > 0) lines.push(`${blank} card row${blank > 1 ? 's' : ''} came back with an empty number. Google's CSV feed blanks out text values in mixed columns.`);
   if (short > 0) lines.push(`Expected ${set.manifestTotal} cards, but only ${set.cards.length} loaded.`);
   return `<div class="mb-4 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-100 space-y-1.5">
     <div class="font-semibold text-amber-300 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i> Some card rows may be incomplete</div>
     ${lines.map(l => `<p>${esc(l)}</p>`).join('')}
-    <p class="text-amber-200/90"><strong>Fix 1 (no key):</strong> select column A of this tab, Format &gt; Number &gt; Plain text, then re-enter the numbers as text.
-    <strong>Fix 2:</strong> set <span class="font-mono">CONFIG.apiKey</span> in the page to a Google API key, which reads every cell as exact text.</p></div>`;
+    <p class="text-amber-200/90">Format column A of the sheet tab to Automatic or Plain text if numbers are missing.</p></div>`;
 }
 
 function renderActiveSetView(container) {
@@ -1331,8 +1278,19 @@ function renderActiveSetView(container) {
 
   const q = appData.searchQuery.toLowerCase().trim(), f = appData.filterStatus;
   const isBinder = appData.viewMode === 'binder';
-  // In binder view, show full pocket layout regardless of active filter so empty sleeves display naturally
-  const cards = set.cards.filter(c => (!q || c._q.includes(q)) && (isBinder || f === 'all' || (f === 'need' && c.status === 'need') || (f === 'own' && isOwned(c)) || (f === 'dupe' && c.duplicates > 0)) || (f === 'secret' && isSecretCard(c)));
+  const hasExplicitBase = Number(set.manifestBase) > 0;
+  const baseTotal = hasExplicitBase ? Number(set.manifestBase) : (Number(set.manifestTotal) || 0);
+  const isSecretCard = c => hasExplicitBase && parseCardNum(c.number) > baseTotal;
+
+  const cards = set.cards.filter(c => (!q || c._q.includes(q)) && (
+    isBinder || 
+    f === 'all' || 
+    (f === 'need' && c.status === 'need') || 
+    (f === 'own' && isOwned(c)) || 
+    (f === 'dupe' && c.duplicates > 0) ||
+    (f === 'secret' && isSecretCard(c))
+  ));
+
   const st = getSetStats(set);
   const tab = (k, label, n, color) => `<button data-action="filter" data-filter="${k}" class="px-2.5 py-1 rounded-lg font-medium transition ${f === k ? `${color} bg-slate-800` : 'text-slate-400 hover:text-white'}">${label} (${n})</button>`;
   const filterPills = isBinder ? '' : `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs overflow-x-auto max-w-full">${tab('all', 'All', st.total, 'text-white')}${tab('need', 'Missing', st.needed, 'text-amber-400')}${tab('own', 'Owned', st.owned, 'text-emerald-400')}${tab('dupe', 'Dupes', st.dupes, 'text-blue-400')}${st.totalSecrets > 0 ? tab('secret', 'Secrets', st.totalSecrets, 'text-amber-300') : ''}</div>`;
@@ -1363,8 +1321,8 @@ function renderActiveSetView(container) {
     </div>
     <div class="p-4 sm:p-5 bg-slate-950/40">${dataWarning(set)}${!cards.length ? `<div class="py-12 text-center text-xs text-slate-500">No cards match your filter criteria in this set.</div>` : appData.viewMode === 'binder' ? renderCardsBinder(set, cards) : renderCardsTable(set, cards)}</div></div>`;
 }
-  
-  function renderCardsTable(set, cards) {
+
+function renderCardsTable(set, cards) {
   const hasType = set.cards.some(c => c.type), name = set.name;
   const hasExplicitBase = Number(set.manifestBase) > 0;
   const baseTotal = hasExplicitBase ? Number(set.manifestBase) : (Number(set.manifestTotal) || 0);
@@ -1430,7 +1388,6 @@ function renderCardsGrid(set, cards) {
 }
 
 function renderCardsBinder(set, cards) {
-  // Group cards into 9-pocket pages (3x3 grid per sheet)
   const pageSize = 9;
   const pages = [];
   for (let i = 0; i < cards.length; i += pageSize) {
@@ -1455,7 +1412,6 @@ function renderCardsBinder(set, cards) {
           const owned = isOwned(c);
 
           if (!owned) {
-            // Phantom sleeve: 50% opacity & greyscale artwork preview
             return `<div ${inspectAttrs(set.name, c)} class="group/pocket relative flex flex-col justify-between p-1 sm:p-2 rounded-lg sm:rounded-xl border border-dashed border-slate-800/80 bg-slate-950/40 hover:border-amber-500/50 hover:bg-slate-950/70 transition-all duration-200 cursor-pointer overflow-hidden aspect-[2.5/3.5]">
               <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="${esc(c.name)}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain p-0.5 sm:p-1 opacity-25 grayscale contrast-125 group-hover/pocket:opacity-75 transition-opacity duration-200">
               <div class="relative z-10 flex items-center justify-between gap-1 pointer-events-none">
@@ -1485,7 +1441,6 @@ function renderCardsBinder(set, cards) {
   }).join('')}</div>`;
 }
 
-
 /* ==========================================================
    TOOLTIPS, INSPECTOR, MODALS, TOASTS
    ========================================================== */
@@ -1510,8 +1465,6 @@ function hideNote() {
   setTimeout(() => tip.classList.contains('opacity-0') && tip.classList.add('hidden'), 150);
 }
 
-// Finds a set by name even if the name has stray whitespace/case/punctuation differences;
-// falls back to the set currently open, so the inspector always has a real set object.
 function resolveSet(name) {
   const exact = setByName.get(name);
   if (exact) return exact;
@@ -1706,7 +1659,6 @@ function scrollLibraryToSet(setId) {
     const headerHeight = header ? header.getBoundingClientRect().height : 0;
     const tileRect = tile.getBoundingClientRect();
     const availableHeight = window.innerHeight - headerHeight;
-    // Centers the tile in the visible area between the header and bottom of the screen
     const targetTop = tileRect.top + window.scrollY - headerHeight - Math.max(0, (availableHeight - tileRect.height) / 2);
     window.scrollTo({ top: Math.max(0, targetTop), behavior: scrollBehavior() });
   });
@@ -1720,18 +1672,17 @@ function scrollSetActionBarIntoView() {
   const targetTop = bar.getBoundingClientRect().top + window.scrollY - headerHeight;
   window.scrollTo({ top: Math.max(0, targetTop), behavior: scrollBehavior() });
 }
-  
-  const FILTER_SLUGS = { need: 'missing', own: 'owned', dupe: 'dupes', secret: 'secrets' };
-  const SLUG_TO_FILTER = { missing: 'need', need: 'need', owned: 'own', own: 'own', dupe: 'dupe', dupes: 'dupe', duplicates: 'dupe', secret: 'secret', secrets: 'secret' };
-  const FILTERS = [['all', 'All'], ['need', 'Need'], ['own', 'Owned'], ['dupe', 'Duplicates'], ['secret', 'Secrets']];
-  
+
+const FILTER_SLUGS = { need: 'missing', own: 'owned', dupe: 'dupes', secret: 'secrets' };
+const SLUG_TO_FILTER = { missing: 'need', need: 'need', owned: 'own', own: 'own', dupe: 'dupe', dupes: 'dupe', duplicates: 'dupe', secrets: 'secret', secret: 'secret' };
+
 function buildSetHash(set, mode = appData.viewMode, filter = appData.filterStatus) {
   const code = (set.code || set.tab).toUpperCase();
   const path = mode === 'binder' ? `${code}/binder` : (FILTER_SLUGS[filter] ? `${code}/${FILTER_SLUGS[filter]}` : code);
   const q = (appData.searchQuery || '').trim();
   return `#${path}${q ? `?q=${encodeURIComponent(q)}` : ''}`;
 }
-function syncSetHash() {   // keep the URL in step with the open set's filter + search
+function syncSetHash() {
   const set = appData.sets.find(s => s.id === appData.activeSetId);
   if (!set) return;
   try { history.replaceState(null, '', buildSetHash(set)); } catch (e) {}
@@ -1744,7 +1695,6 @@ async function openSet(set, initialMode = 'table') {
   }
   appData.binderPage = 0;
 
-  // Build the target hash (e.g. #JPSV9 or #JPSV9/binder)
   const targetHash = buildSetHash(set, initialMode, appData.filterStatus);
   const currentBase = window.location.hash.replace(/^#\/?/, '').split(/[\/?]/)[0].toUpperCase();
   const sameSet = currentBase === (set.code || set.tab).toUpperCase();
@@ -1826,27 +1776,27 @@ const ACTIONS = {
   'toggle-all-hits'() { appData.showAllHits = !appData.showAllHits; renderApp(); },
 
   async share() {
-  if (typeof syncSetHash === 'function') syncSetHash();   // make sure the URL matches the current filter/search
-  const set = appData.sets.find(s => s.id === appData.activeSetId);
-  const url = window.location.origin + window.location.pathname.replace(/index\.html?$/i, '') + window.location.hash;
-  const title = set ? set.name : document.title;
+    if (typeof syncSetHash === 'function') syncSetHash();
+    const set = appData.sets.find(s => s.id === appData.activeSetId);
+    const url = window.location.origin + window.location.pathname.replace(/index\.html?$/i, '') + window.location.hash;
+    const title = set ? set.name : document.title;
 
-  if (navigator.share) {
-    try { await navigator.share({ title, text: set ? `${title} on my card tracker` : title, url }); return; }
-    catch (e) { if (e && e.name === 'AbortError') return; }   // user closed the sheet; anything else falls through to copy
-  }
-  try {
-    await navigator.clipboard.writeText(url);
-    showToast('Link copied to clipboard', 'success');
-  } catch (e) {
-    const t = document.createElement('textarea');
-    t.value = url; t.style.position = 'fixed'; t.style.opacity = '0';
-    document.body.appendChild(t); t.select();
-    try { document.execCommand('copy'); showToast('Link copied to clipboard', 'success'); }
-    catch (_) { showToast('Could not copy the link', 'error'); }
-    t.remove();
-  }
-},
+    if (navigator.share) {
+      try { await navigator.share({ title, text: set ? `${title} on my card tracker` : title, url }); return; }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Link copied to clipboard', 'success');
+    } catch (e) {
+      const t = document.createElement('textarea');
+      t.value = url; t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select();
+      try { document.execCommand('copy'); showToast('Link copied to clipboard', 'success'); }
+      catch (_) { showToast('Could not copy the link', 'error'); }
+      t.remove();
+    }
+  },
 
   'library-filter'(el) { 
     appData.libraryFilter = el.value; 
@@ -1877,16 +1827,13 @@ const ACTIONS = {
     if (set && appData.viewMode !== 'binder') history.replaceState(null, '', buildSetHash(set));
     renderApp();
   },
-view(el) {
+  view(el) {
     appData.viewMode = el.dataset.mode;
     if (appData.viewMode === 'binder') appData.filterStatus = 'all';
-
-    // Update URL hash to reflect the current view mode
     const set = appData.sets.find(s => s.id === appData.activeSetId);
     if (set) {
       history.replaceState(null, '', buildSetHash(set));
     }
-
     renderApp();
   },
   inspect(el, e) { e.stopPropagation(); showCardInspector(el.dataset.set, el.dataset.num, el.dataset.name); },
@@ -1904,7 +1851,7 @@ document.addEventListener('change', e => { const el=e.target.closest('select[dat
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { hideCardInspector(); closeModal('sheetModal'); closeModal('setupModal'); }
   const typing = e.target && (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName));
-    if (!typing && appData.viewMode === 'binder' && !$('globalCardInspector').classList.contains('opacity-100') && $('setupModal').classList.contains('hidden')) {
+  if (!typing && appData.viewMode === 'binder' && !$('globalCardInspector').classList.contains('opacity-100') && $('setupModal').classList.contains('hidden')) {
     if (e.key === 'ArrowLeft') { e.preventDefault(); if (ACTIONS['binder-prev']) ACTIONS['binder-prev'](); }
     if (e.key === 'ArrowRight') { e.preventDefault(); if (ACTIONS['binder-next']) ACTIONS['binder-next'](); }
   }
@@ -1925,7 +1872,6 @@ $('jsonFileInput').addEventListener('change', e => {
   $('exportDropdown').classList.add('hidden');
 });
 
-
 let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
@@ -1940,7 +1886,7 @@ window.addEventListener('beforeinstallprompt', e => {
 let searchTimer;
 function handleSearch(val) {
   appData.searchQuery = val;
-    if (!val.trim()) appData.showAllHits = false;
+  if (!val.trim()) appData.showAllHits = false;
   $('clearSearchBtn').classList.toggle('hidden', !val.trim());
   if (val.trim() && !appData.activeSetId) { const p = preloadOwnedSets(); if (p) setTimeout(renderApp, 0); }
   clearTimeout(searchTimer); searchTimer = setTimeout(() => { syncSetHash(); renderApp(); }, 150);
@@ -1964,7 +1910,6 @@ function checkUrlHash() {
     return;
   }
 
-  // 1. Direct deep-link to Hunt List: #hunt or #wanted
   const cleanHash = rawHash.toLowerCase();
   if (cleanHash === 'hunt' || cleanHash === 'wanted') {
     appData.activeSetId = null;
@@ -1978,13 +1923,12 @@ function checkUrlHash() {
     return;
   }
 
-  // 2. Existing set & binder hash logic
   const rawFull = window.location.hash.replace(/^#\/?/, '').trim();
   const qMark = rawFull.indexOf('?');
   const pathRaw = qMark < 0 ? rawFull : rawFull.slice(0, qMark);
   const params = new URLSearchParams(qMark < 0 ? '' : rawFull.slice(qMark + 1));
   let pathDecoded = pathRaw; try { pathDecoded = decodeURIComponent(pathRaw); } catch (e) {}
-  const parts = pathDecoded.split('/').map(p => p.replace(/^#/, '').trim());  // also accepts #ME6/#owned
+  const parts = pathDecoded.split('/').map(p => p.replace(/^#/, '').trim());
   const targetCode = (parts[0] || '').toUpperCase();
   const subView = (parts[1] || '').toLowerCase();
   const wantsBinder = subView === 'binder' || params.get('view') === 'binder';
@@ -2001,31 +1945,19 @@ function checkUrlHash() {
     appData.activeSetId = target.id;
     appData.filterStatus = wantsBinder ? 'all' : wantedFilter;
     const box = $('searchInput');
-    if (box && document.activeElement !== box) {   // don't overwrite text the user is typing
+    if (box && document.activeElement !== box) {
       appData.searchQuery = wantedQuery;
       box.value = wantedQuery;
       $('clearSearchBtn').classList.toggle('hidden', !wantedQuery.trim());
     }
     openSet(target, wantsBinder ? 'binder' : 'table');
   }
-
-    if (target && isVisible(target)) {
-    appData.activeSetId = target.id;
-    appData.filterStatus = wantsBinder ? 'all' : wantedFilter;
-    openSet(target, wantsBinder ? 'binder' : 'table');
-  }
 }
 
-// Handle browser back and forward button clicks
 window.addEventListener('popstate', () => {
   checkUrlHash();
 });
-  
-/* ==========================================================
-   INITIALIZATION
-   ========================================================== */
 
-// Touch swipe navigation for binder pages
 let touchStartX = 0;
 let touchStartY = 0;
 document.addEventListener('touchstart', e => {
@@ -2046,7 +1978,6 @@ document.addEventListener('touchend', e => {
   }
 }, { passive: true });
 
-// Service Worker Registration for offline caching
 if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
   window.addEventListener('load', () => {
     const swCode = `
@@ -2068,7 +1999,7 @@ if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || wi
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-try {
+  try {
     const p = JSON.parse(store.get(CONFIG.storageKey) || 'null');
     if (p && p.sheetId) {
       appData.cfg = { ...appData.cfg, sheetId: p.sheetId, autoSync: p.autoSync !== false, lastSynced: p.lastSynced || null, totalWanted: p.totalWanted ?? null };
@@ -2101,11 +2032,11 @@ try {
   renderApp();
   if (cached) {
     scheduleEnrich();
-    checkUrlHash(); // Checks hash from cached data immediately
+    checkUrlHash();
   }
   if (c.sheetId && c.autoSync !== false) {
     syncLiveSheet({ background: cached }).then(() => {
-      checkUrlHash(); // Checks hash again after live sheet finishes syncing
+      checkUrlHash();
     });
   }
 });

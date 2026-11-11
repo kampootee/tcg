@@ -929,11 +929,11 @@ function parseCardNum(raw) {
 function getSetStats(set) {
   const cards = set.cards || [];
   const manifestTotal = Number(set.manifestTotal) || 0;
-  const manifestBase = Number(set.manifestBase) || 0;
-  const baseTotal = manifestBase > 0 ? manifestBase : (manifestTotal || cards.length || 0);
+  const hasExplicitBase = Number(set.manifestBase) > 0;
+  const baseTotal = hasExplicitBase ? Number(set.manifestBase) : (manifestTotal || cards.length || 0);
 
   if (cards.length) {
-    const isSecret = c => baseTotal > 0 && parseCardNum(c.number) > baseTotal;
+    const isSecret = c => hasExplicitBase && parseCardNum(c.number) > baseTotal;
     const baseCards = cards.filter(c => !isSecret(c));
     const secretCards = cards.filter(c => isSecret(c));
     const ownedBase = baseCards.filter(isOwned).length;

@@ -1295,7 +1295,7 @@ function renderActiveSetView(container) {
   const tab = (k, label, n, color) => `<button data-action="filter" data-filter="${k}" class="px-2.5 py-1 rounded-lg font-medium transition ${f === k ? `${color} bg-slate-800` : 'text-slate-400 hover:text-white'}">${label} (${n})</button>`;
   const filterPills = isBinder ? '' : `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs overflow-x-auto max-w-full">${tab('all', 'All', st.total, 'text-white')}${tab('need', 'Missing', st.needed, 'text-amber-400')}${tab('own', 'Owned', st.owned, 'text-emerald-400')}${tab('dupe', 'Dupes', st.dupes, 'text-blue-400')}${st.totalSecrets > 0 ? tab('secret', 'Secrets', st.totalSecrets, 'text-amber-300') : ''}</div>`;
   const vm = (mode, icon, label) => `<button data-action="view" data-mode="${mode}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition ${appData.viewMode === mode ? 'text-poke-yellow bg-slate-800' : 'text-slate-400 hover:text-white'}"><i data-lucide="${icon}" class="w-4 h-4"></i><span class="text-xs">${label}</span></button>`;
-  const viewToggle = `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs flex-shrink-0">${vm('table', 'list', 'Table')}${vm('binder', 'book-open', 'Binder')}</div>`;
+  const viewToggle = `<div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs flex-shrink-0">${vm('table', 'list', 'Table')}${(st.totalSecrets > 0 || appData.viewMode === 'secrets') ? vm('secrets', 'star', 'Secrets') : ''}${vm('binder', 'book-open', 'Binder')}</div>`;
   const copyMissing = (!isBinder && f === 'need') ? `<button data-action="copy-missing" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm" title="Copy all missing cards formatted as 001 Card Name"><i data-lucide="copy" class="w-3.5 h-3.5 text-amber-400"></i><span>Copy Missing</span></button>` : '';
   container.innerHTML = `<div class="bg-slate-900/90 border border-slate-800 rounded-2xl shadow-lg">
     <div id="setActionBar" class="sticky top-14 sm:top-16 z-30 p-3 sm:p-4 rounded-t-2xl flex flex-col gap-3 border-b border-slate-800 bg-slate-900/95 backdrop-blur-md shadow-md">
@@ -1319,7 +1319,7 @@ function renderActiveSetView(container) {
         </div>
       </div>
     </div>
-    <div class="p-4 sm:p-5 bg-slate-950/40">${dataWarning(set)}${!cards.length ? `<div class="py-12 text-center text-xs text-slate-500">No cards match your filter criteria in this set.</div>` : appData.viewMode === 'binder' ? renderCardsBinder(set, cards) : renderCardsTable(set, cards)}</div></div>`;
+    <div class="p-4 sm:p-5 bg-slate-950/40">${dataWarning(set)}${!cards.length ? `<div class="py-12 text-center text-xs text-slate-500">No cards match your filter criteria in this set.</div>` : appData.viewMode === 'binder' ? renderCardsBinder(set, cards) : appData.viewMode === 'secrets' ? renderCardsSecrets(set, cards) : renderCardsTable(set, cards)}</div></div>`;
 }
 
 function renderCardsTable(set, cards) {
@@ -1372,6 +1372,55 @@ function renderCardsTable(set, cards) {
       <thead class="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[10px]"><tr>
         <th class="py-3 px-4 w-12 text-center">Art</th><th class="py-3 px-4 w-16">#</th><th class="py-3 px-4">Card Name</th>${hasType ? '<th class="py-3 px-4">Type</th>' : ''}<th class="py-3 px-4">Rarity</th><th class="py-3 px-4 text-center">Status</th><th class="py-3 px-4 text-center">Duplicates</th></tr></thead>
       <tbody class="divide-y divide-slate-800/60">${rows}</tbody></table></div>`;
+}
+
+function renderCardsSecrets(set, cards) {
+  const hasExplicitBase = Number(set.manifestBase) > 0;
+  const baseTotal = hasExplicitBase ? Number(set.manifestBase) : (Number(set.manifestTotal) || 0);
+  const allSecrets = set.cards.filter(c => hasExplicitBase && parseCardNum(c.number) > baseTotal);
+  const total = allSecrets.length;
+  const ownedN = allSecrets.filter(isOwned).length;
+  const dupesN = allSecrets.filter(c => c.duplicates > 0).length;
+  const pct = total ? Math.round((ownedN / total) * 100) : 0;
+  const complete = total > 0 && ownedN === total;
+
+  const banner = `<div class="mb-4 sm:mb-6 p-3.5 sm:p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-400/[0.04] to-transparent flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
+    <div class="flex items-center gap-2.5 flex-shrink-0">
+      <div class="w-9 h-9 rounded-xl bg-amber-400/15 border border-amber-400/40 flex items-center justify-center text-amber-300"><i data-lucide="star" class="w-4.5 h-4.5"></i></div>
+      <div><div class="font-display font-bold text-sm sm:text-base text-amber-200 leading-tight">Secret Rares</div>
+      <div class="text-[11px] text-slate-400">${ownedN} of ${total} owned${dupesN ? ` · ${dupesN} with dupes` : ''}${total - ownedN ? ` · ${total - ownedN} missing` : ''}</div></div>
+    </div>
+    <div class="flex items-center gap-2.5 flex-1 min-w-0">
+      <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden"><div class="${complete ? 'bg-emerald-400' : 'bg-gradient-to-r from-amber-500 to-poke-yellow'} h-full rounded-full" style="width:${pct}%"></div></div>
+      <span class="text-xs font-bold ${complete ? 'text-emerald-400' : 'text-amber-300'}">${pct}%</span>
+    </div>
+  </div>`;
+
+  const tiles = cards.map(c => {
+    const owned = isOwned(c);
+    const frame = owned
+      ? 'border-amber-400/60 bg-slate-900/90 shadow-[0_0_14px_rgba(251,191,36,0.22)] hover:border-amber-300 hover:shadow-[0_0_22px_rgba(251,191,36,0.4)] hover:-translate-y-0.5'
+      : 'border-dashed border-slate-700/80 bg-slate-950/50 hover:border-amber-500/50';
+    const imgCls = owned
+      ? 'absolute inset-0 w-full h-full object-contain p-1'
+      : 'absolute inset-0 w-full h-full object-contain p-1 opacity-30 grayscale contrast-125 group-hover/secret:opacity-70 transition-opacity duration-200';
+    return `<div class="group/secret flex flex-col gap-2">
+      <div ${inspectAttrs(set.name, c)} class="holo-sheen relative aspect-[2.5/3.5] rounded-xl border-2 ${frame} overflow-hidden cursor-pointer transition-all duration-200">
+        <img ${imgSrcAttrs(getCardImageSources(set, c))} alt="${esc(c.name)}" loading="lazy" decoding="async" class="${imgCls}">
+        <span class="absolute top-1.5 left-1.5 z-10 font-mono text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded bg-slate-950/85 border border-slate-800 ${owned ? 'text-amber-300' : 'text-slate-400'} pointer-events-none">#${esc(pad(c.number))}</span>
+      </div>
+      <div class="px-0.5 text-center min-w-0">
+        <div ${inspectAttrs(set.name, c)} class="font-display font-semibold text-xs sm:text-sm text-white truncate cursor-pointer hover:text-poke-yellow transition" title="${esc(c.name)}">${esc(c.name)}</div>
+        <div class="flex flex-wrap items-center justify-center gap-1 mt-1.5">
+          ${statusBadge(c, 'text-[10px] px-2 py-0.5')}
+          ${c.duplicates > 0 ? `<span class="px-1.5 py-0.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[10px] font-bold">Dupe ×${esc(c.duplicates)}</span>` : ''}
+        </div>
+        <div class="mt-1">${rarityBadge(c, 'text-[9px] px-1.5 py-0.5')}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `${banner}<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-3 gap-y-5 sm:gap-x-5 sm:gap-y-7">${tiles}</div>`;
 }
 
 function renderCardsGrid(set, cards) {
@@ -1678,7 +1727,10 @@ const SLUG_TO_FILTER = { missing: 'need', need: 'need', owned: 'own', own: 'own'
 
 function buildSetHash(set, mode = appData.viewMode, filter = appData.filterStatus) {
   const code = (set.code || set.tab).toUpperCase();
-  const path = mode === 'binder' ? `${code}/binder` : (FILTER_SLUGS[filter] ? `${code}/${FILTER_SLUGS[filter]}` : code);
+  const path = mode === 'binder' ? `${code}/binder`
+    : mode === 'secrets' ? `${code}/secrets`
+    : filter === 'secret' ? `${code}/secrets/table`
+    : (FILTER_SLUGS[filter] ? `${code}/${FILTER_SLUGS[filter]}` : code);
   const q = (appData.searchQuery || '').trim();
   return `#${path}${q ? `?q=${encodeURIComponent(q)}` : ''}`;
 }
@@ -1692,6 +1744,8 @@ async function openSet(set, initialMode = 'table') {
   appData.viewMode = initialMode;
   if (appData.viewMode === 'binder') {
     appData.filterStatus = 'all';
+  } else if (appData.viewMode === 'secrets') {
+    appData.filterStatus = 'secret';
   }
   appData.binderPage = 0;
 
@@ -1824,12 +1878,17 @@ const ACTIONS = {
   filter(el) {
     appData.filterStatus = el.dataset.filter;
     const set = appData.sets.find(s => s.id === appData.activeSetId);
-    if (set && appData.viewMode !== 'binder') history.replaceState(null, '', buildSetHash(set));
+    if (set && appData.viewMode !== 'binder') {
+      if (appData.filterStatus === 'secret') appData.viewMode = 'secrets';
+      else if (appData.viewMode === 'secrets') appData.viewMode = 'table';
+      history.replaceState(null, '', buildSetHash(set));
+    }
     renderApp();
   },
   view(el) {
     appData.viewMode = el.dataset.mode;
     if (appData.viewMode === 'binder') appData.filterStatus = 'all';
+    else if (appData.viewMode === 'secrets') appData.filterStatus = 'secret';
     const set = appData.sets.find(s => s.id === appData.activeSetId);
     if (set) {
       history.replaceState(null, '', buildSetHash(set));
@@ -1932,6 +1991,7 @@ function checkUrlHash() {
   const targetCode = (parts[0] || '').toUpperCase();
   const subView = (parts[1] || '').toLowerCase();
   const wantsBinder = subView === 'binder' || params.get('view') === 'binder';
+  const wantsSecretsShowcase = !wantsBinder && subView === 'secrets' && (parts[2] || '').toLowerCase() !== 'table' && params.get('view') !== 'table';
   const wantedFilter = SLUG_TO_FILTER[subView] || 'all';
   const wantedQuery = params.get('q') || '';
 
@@ -1950,7 +2010,7 @@ function checkUrlHash() {
       box.value = wantedQuery;
       $('clearSearchBtn').classList.toggle('hidden', !wantedQuery.trim());
     }
-    openSet(target, wantsBinder ? 'binder' : 'table');
+    openSet(target, wantsBinder ? 'binder' : wantsSecretsShowcase ? 'secrets' : 'table');
   }
 }
 
